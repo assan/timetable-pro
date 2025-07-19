@@ -1,11 +1,8 @@
 <!-- scheduling/templates/scheduling/enter_subjects.html -->
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Трансмиссии</title>
-</head>
-<body>
+{% extends 'base.html' %}
+{%block title%} Трансмиссии {% endblock %}
+
+{% block content %}
     <p><a href="/">На главную</a></p>
     <p><a href="/time_slots">Часы вождения</a></p>
 <h2>Введите типы трансмиссий</h2>
@@ -30,6 +27,4 @@
     </tr>
 {%endfor%}
 </table>
-
-</body>
-</html>
+{% endblock %}

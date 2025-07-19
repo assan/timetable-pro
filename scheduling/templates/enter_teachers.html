@@ -1,11 +1,7 @@
 <!-- scheduling/templates/scheduling/enter_teachers.html -->
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Инструкторы</title>
-</head>
-<body>
+{% extends 'base.html' %}
+{%block title%} Инструкторы {% endblock %}
+{% block content %}
     <p><a href="/">На главную</a></p>
     <p><a href="/time_slots">Часы вождения</a></p>
 <h2>Введите имя инструктора</h2>
@@ -33,5 +29,4 @@
 {%endfor%}
 </table>
 
-</body>
-</html>
+{% endblock %}

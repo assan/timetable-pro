@@ -1,15 +1,10 @@
 <!-- scheduling/templates/scheduling/calculate_schedule.html -->
-
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Расчет расписания</title>
-</head>
-<body>
+{% extends 'base.html' %}
+{%block title%}Расчет расписания {% endblock %}
+{% block content %}
     <h1>Расчет расписания</h1>
     <form method="post">
         {% csrf_token %}
         <button type="submit">Рассчитать расписание</button>
     </form>
-</body>
-</html>
+{% endblock %}

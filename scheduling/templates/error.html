@@ -1,12 +1,7 @@
 <!-- scheduling/templates/scheduling/error.html -->
-
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Ошибка</title>
-</head>
-<body>
+{% extends 'base.html' %}
+{%block title%} Ошибка {% endblock %}
+{% block content%}
     <h1>Ошибка</h1>
     <p>{{ message }}</p>
-</body>
-</html>
+{% endblock %}
