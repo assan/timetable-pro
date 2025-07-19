@@ -2,13 +2,7 @@
 {% extends 'base.html' %}
 {%block title%} Расписание занятий {% endblock %}
 {% block content %}
- <div>
-        <a href="calculate/">Рассчитать расписание</a><br>
-        <a href="students/">Курсанты</a><br>
-        <a href="teachers/">Инструкторы</a><br>
-        <a href="subjects/">Виды трансмиссий</a><br>
-        <a href="time_slots/">Время для занятий</a>
-    </div>
+
     <h1>Расписание занятий</h1>
     {% for day, lessons in schedule.items %}
         <h2>{{ lessons.0.get_day_of_week_display }}</h2>
