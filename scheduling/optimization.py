@@ -83,7 +83,7 @@ def init_availability():
                     ets=time_to_int(time_slot.end_time)
                     subject=student.subject
                     if sft<=sts and eft>=ets:
-                        print(student.name, time_slot.start_time, time_slot.end_time, teacher.name, day_of_week)
+                        #print(student.name, time_slot.start_time, time_slot.end_time, teacher.name, day_of_week)
                         avail= Availability.objects.get(student=student, time_slot=time_slot, teacher=teacher, day_of_week=day, subject=subject)
                         avail.available= True
                         avail.save()
