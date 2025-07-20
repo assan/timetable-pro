@@ -14,8 +14,8 @@ from .models import *
 #         fields = ['student', 'time_slot', 'day_of_week', 'available']
 
 class StudentForm(forms.ModelForm):
-    subject = forms.ModelChoiceField(queryset=Subject.objects.all())
-    teacher=forms.ModelChoiceField(queryset=Teacher.objects.all())
+    subject = forms.ModelChoiceField(queryset=Subject.objects.all(), label = "Трансмиссия")
+    teacher=forms.ModelChoiceField(queryset=Teacher.objects.all(), label ="Инструктор")
     class Meta:
         model= Student
         fields='__all__'
