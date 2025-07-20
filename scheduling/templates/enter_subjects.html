@@ -20,8 +20,8 @@
 {% for subject in subjects %}
     <tr>
     <td>{{subject.name}}  </td>
-        <td><a href="edit/{{student.id}}">Изменить</a> </td>
-        <td><a href="delete/{{student.id}}">Удалить</a></td>
+        <td><a href="edit/{{subject.id}}">Изменить</a> </td>
+        <td><a href="delete/{{subject.id}}">Удалить</a></td>
     </tr>
 {%endfor%}
 </table>
