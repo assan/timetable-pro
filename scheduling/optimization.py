@@ -14,25 +14,28 @@ def time_to_int(time):
     minute=int(hm[1])
     #minute=time[1].split(':')
     return hour*60+minute
-def is_overlapping(time_slot1,time_slot2):
-    st1=time_to_int(time_slot1.start_time)
-    et1 = time_to_int(time_slot1.end_time)
-    # st1, et1 = parse_start_end(time_slot1.time)
-    st2 = time_to_int(time_slot2.start_time)
-    et2 = time_to_int(time_slot2.end_time)
-    return st2<st1<et2 or st2<et1<et2 or \
-       st1 < st2 < et1 or st1 < et2 < et1
+def is_overlapping(time_slot1, time_slot2):
+    st1, et1 = time_slot1.start_minutes, time_slot1.end_minutes
+    st2, et2 = time_slot2.start_minutes, time_slot2.end_minutes
+    return max(st1,st2) < min(et1,et2)
 def init_time_slots():
     TimeSlot.objects.all().delete()
-    #45 min
-    for h in range(8,20):
-        for m in range(0,46,15):
-            start_time=str(h).zfill(2)+':'+str(m).zfill(2)
-            end_h=(h*60+m+45)//60
-            end_m=(h*60+m+45)%60
-            end_time = str(end_h).zfill(2) + ':' + str(end_m).zfill(2)
-            #time_slot=start_time+'-'+end_time
-            TimeSlot.objects.create(start_time=start_time, end_time=end_time)
+    time_slots = []
+    for h in range(8, 20):
+        for m in range(0, 46, 15):
+            start_time = f"{h:02d}:{m:02d}"
+            end_h = (h * 60 + m + 45) // 60
+            end_m = (h * 60 + m + 45) % 60
+            end_time = f"{end_h:02d}:{end_m:02d}"
+            time_slots.append(
+                TimeSlot(
+                    start_time=start_time,
+                    end_time=end_time,
+                    start_minutes=h * 60 + m,
+                    end_minutes=end_h * 60 + end_m
+                )
+            )
+    TimeSlot.objects.bulk_create(time_slots)
     # #90 min
     # for h in range(8,19):
     #     for m in range(0,46,15):
@@ -52,44 +55,38 @@ def init_time_slots():
     #         time_slot=start_time+'-'+end_time
     #         TimeSlot.objects.create(time=time_slot)
 def init_availability():
+    Availability.objects.all().delete()
     students = Student.objects.all()
     time_slots = TimeSlot.objects.all()
-    Availability.objects.all().delete()
-    teachers = Teacher.objects.all()
-    subjects= Subject.objects.all()
-    for day_of_week in range(7):
-        for teacher in teachers:
-            for student in students:
-                for subject in subjects:
-                    for time_slot in time_slots:
-                        Availability.objects.create(student=student, time_slot=time_slot, teacher=teacher,\
-                                                    day_of_week=day_of_week, subject=subject, available=False)
-    days_of_week={0:'monday_free_time',
-                  1:'tuesday_free_time',
-                  2:"wednesday_free_time",
-                  3:"thursday_free_time",
-                  4:"friday_free_time",
-                  5:"saturday_free_time",
-                  6:"sunday_free_time"}
+    days_of_week = {
+        0: 'monday_free_time', 1: 'tuesday_free_time', 2: 'wednesday_free_time',
+        3: 'thursday_free_time', 4: 'friday_free_time', 5: 'saturday_free_time',
+        6: 'sunday_free_time'
+    }
+    availabilities = []
     for day in range(7):
         day_of_week = days_of_week[day]
         for student in students:
             if getattr(student, day_of_week):
-                teacher=student.teacher
+                teacher = student.teacher
+                subject = student.subject
+                free_time = getattr(student, day_of_week)
+                sft, eft = parse_start_end(free_time)
                 for time_slot in time_slots:
-                    free_time=getattr(student, day_of_week)
-                    sft, eft = parse_start_end(free_time)
-                    sts=time_to_int(time_slot.start_time)
-                    ets=time_to_int(time_slot.end_time)
-                    subject=student.subject
-                    if sft<=sts and eft>=ets:
-                        #print(student.name, time_slot.start_time, time_slot.end_time, teacher.name, day_of_week)
-                        avail= Availability.objects.get(student=student, time_slot=time_slot, teacher=teacher, day_of_week=day, subject=subject)
-                        avail.available= True
-                        avail.save()
-
-
-
+                    sts = time_to_int(time_slot.start_time)
+                    ets = time_to_int(time_slot.end_time)
+                    if sft <= sts and eft >= ets:
+                        availabilities.append(
+                            Availability(
+                                student=student,
+                                time_slot=time_slot,
+                                teacher=teacher,
+                                day_of_week=day,
+                                subject=subject,
+                                available=True
+                            )
+                        )
+    Availability.objects.bulk_create(availabilities)
 def calculate_schedule():
     init_time_slots()
     init_availability()
