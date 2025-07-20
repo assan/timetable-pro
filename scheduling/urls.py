@@ -1,22 +1,37 @@
-# scheduling/urls.py
-
 from django.urls import path
-from . import views
+from .views import (
+    CalculateScheduleView,
+    ScheduleView,
+    StudentListCreateView,
+    StudentUpdateView,
+    StudentDeleteView,
+    SubjectListCreateView,
+    SubjectUpdateView,
+    SubjectDeleteView,
+    TeacherListCreateView,
+    TeacherUpdateView,
+    TeacherDeleteView,
+    TimeSlotListCreateView,
+    TimeSlotUpdateView,
+    TimeSlotDeleteView,
+    get_teachers,
+)
 
 urlpatterns = [
-    path('', views.schedule_view, name='schedule'),  # Отображение расписания
-    path('calculate/', views.calculate_schedule_view, name='calculate_schedule'),  # Расчет расписания
-    path('students/',views.students_view, name='students_view'),
-    path("students/edit/<int:id>/", views.edit_student),
-    path("students/delete/<int:id>/", views.delete_student),
-    path('subjects/', views.subject_view, name='subject_view'),
-    path("subjects/edit/<int:id>/", views.edit_subject),
-    path("subjects/delete/<int:id>/", views.delete_subject),
-    path('teachers/', views.teacher_view, name='teacher_view'),
-    path("teachers/edit/<int:id>/", views.edit_teacher),
-    path("teachers/delete/<int:id>/", views.delete_teacher),
-    path('time_slots/', views.time_slots_view, name='time_slots_view'),
-    path("time_slots/edit/<int:id>/", views.edit_time_slot),
-    path("time_slots/delete/<int:id>/", views.delete_time_slot),
-    path('get-teachers/', views.get_teachers, name='get_teachers'),
+    path('', ScheduleView.as_view(), name='main'),
+    path('calculate/', CalculateScheduleView.as_view(), name='calculate_schedule'),
+    path('schedule/', ScheduleView.as_view(), name='schedule'),
+    path('students/', StudentListCreateView.as_view(), name='students'),
+    path('students/edit/<int:pk>/', StudentUpdateView.as_view(), name='edit_student'),
+    path('students/delete/<int:pk>/', StudentDeleteView.as_view(), name='delete_student'),
+    path('subjects/', SubjectListCreateView.as_view(), name='subjects'),
+    path('subjects/edit/<int:pk>/', SubjectUpdateView.as_view(), name='edit_subject'),
+    path('subjects/delete/<int:pk>/', SubjectDeleteView.as_view(), name='delete_subject'),
+    path('teachers/', TeacherListCreateView.as_view(), name='teachers'),
+    path('teachers/edit/<int:pk>/', TeacherUpdateView.as_view(), name='edit_teacher'),
+    path('teachers/delete/<int:pk>/', TeacherDeleteView.as_view(), name='delete_teacher'),
+    path('time_slots/', TimeSlotListCreateView.as_view(), name='time_slots'),
+    path('time_slots/edit/<int:pk>/', TimeSlotUpdateView.as_view(), name='edit_time_slot'),
+    path('time_slots/delete/<int:pk>/', TimeSlotDeleteView.as_view(), name='delete_time_slot'),
+    path('get_teachers/', get_teachers, name='get_teachers'),
 ]

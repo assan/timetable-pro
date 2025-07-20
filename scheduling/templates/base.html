@@ -13,10 +13,10 @@
     <nav>
         <a href="{% url 'schedule' %}">На главную</a>
         <a href="{% url 'calculate_schedule' %}">Рассчитать расписание</a>
-        <a href="{% url 'students_view' %}">Курсанты</a>
-        <a href="{% url 'teacher_view' %}">Инструкторы</a>
-        <a href="{% url 'subject_view' %}">Виды трансмиссий</a>
-        <a href="{% url 'time_slots_view' %}">Время для занятий</a>
+        <a href="{% url 'students' %}">Курсанты</a>
+        <a href="{% url 'teachers' %}">Инструкторы</a>
+        <a href="{% url 'subjects' %}">Виды трансмиссий</a>
+        <a href="{% url 'time_slots' %}">Время для занятий</a>
     </nav>
     {% block content %}{% endblock %}
 </div>
