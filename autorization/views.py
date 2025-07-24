@@ -1,16 +1,14 @@
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.utils.decorators import method_decorator
-from django.views.generic import View, UpdateView, ListView
+from django.views.generic import TemplateView, ListView
 from django.views.generic.edit import FormMixin
 from django.shortcuts import render, redirect
-from django.http import HttpResponseForbidden
 from django.urls import reverse_lazy
+from .forms import LoginForm, UserProfileForm
 from .models import UserProfile
-from .forms import UserProfileForm
-from scheduling.models import Student, Teacher
+from scheduling.models import Student, Teacher, Lesson
 
-# Проверка роли пользователя
 def is_admin(user):
     return user.is_authenticated and hasattr(user, 'userprofile') and user.userprofile.role == 'admin'
 
@@ -20,65 +18,61 @@ def is_student(user):
 def is_teacher(user):
     return user.is_authenticated and hasattr(user, 'userprofile') and user.userprofile.role == 'teacher'
 
-# Декораторы для защиты представлений
-decorators_student = [login_required, user_passes_test(is_student)]
-decorators_teacher = [login_required, user_passes_test(is_teacher)]
-decorators_admin = [login_required, user_passes_test(is_admin)]
-
-# Логин
-class LoginView(View):
+class LoginView(TemplateView):
     template_name = 'autorization/login.html'
 
-    def get(self, request):
-        return render(request, self.template_name)
+    def post(self, request, *args, **kwargs):
+        form = LoginForm(request.POST)
+        if form.is_valid():
+            username = form.cleaned_data['username']
+            password = form.cleaned_data['password']
+            user = authenticate(request, username=username, password=password)
+            if user is not None:
+                login(request, user)
+                if hasattr(user, 'userprofile'):
+                    if user.userprofile.role == 'student':
+                        return redirect('autorization:student_dashboard')
+                    elif user.userprofile.role == 'teacher':
+                        return redirect('autorization:teacher_dashboard')
+                    elif user.userprofile.role == 'admin':
+                        return redirect('autorization:admin_dashboard')
+                return redirect('scheduling:schedule')
+        return render(request, self.template_name, {'form': form})
 
-    def post(self, request):
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            login(request, user)
-            if hasattr(user, 'userprofile'):
-                if user.userprofile.role == 'admin':
-                    return redirect('autorization:admin_dashboard')
-                elif user.userprofile.role == 'student':
-                    return redirect('autorization:student_dashboard')
-                elif user.userprofile.role == 'teacher':
-                    return redirect('autorization:teacher_dashboard')
-            return redirect('scheduling:schedule')
-        return render(request, self.template_name, {'error': 'Неверные данные'})
-
-# Логаут
+@login_required
 def logout_view(request):
     logout(request)
     return redirect('autorization:login')
 
-# Личный кабинет курсанта
-@method_decorator(decorators_student, name='dispatch')
-class StudentDashboardView(UpdateView):
-    model = Student
-    fields = ['monday_free_time', 'tuesday_free_time', 'wednesday_free_time', 'thursday_free_time',
-              'friday_free_time', 'saturday_free_time', 'sunday_free_time']
+@method_decorator([login_required, user_passes_test(is_student)], name='dispatch')
+class StudentDashboardView(TemplateView):
     template_name = 'autorization/student_dashboard.html'
-    success_url = reverse_lazy('autorization:student_dashboard')
 
-    def get_object(self):
-        return Student.objects.get(user=self.request.user)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        student = Student.objects.get(user=self.request.user)
+        lessons = Lesson.objects.filter(student=student)
+        schedule = {i: [] for i in range(7)}
+        for lesson in lessons:
+            schedule[lesson.day_of_week].append(lesson)
+        context['schedule'] = schedule
+        return context
 
-# Личный кабинет инструктора
-@method_decorator(decorators_teacher, name='dispatch')
-class TeacherDashboardView(UpdateView):
-    model = Teacher
-    fields = ['monday_free_time', 'tuesday_free_time', 'wednesday_free_time', 'thursday_free_time',
-              'friday_free_time', 'saturday_free_time', 'sunday_free_time']
+@method_decorator([login_required, user_passes_test(is_teacher)], name='dispatch')
+class TeacherDashboardView(TemplateView):
     template_name = 'autorization/teacher_dashboard.html'
-    success_url = reverse_lazy('autorization:teacher_dashboard')
 
-    def get_object(self):
-        return Teacher.objects.get(user=self.request.user)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        teacher = Teacher.objects.get(user=self.request.user)
+        lessons = Lesson.objects.filter(teacher=teacher)
+        schedule = {i: [] for i in range(7)}
+        for lesson in lessons:
+            schedule[lesson.day_of_week].append(lesson)
+        context['schedule'] = schedule
+        return context
 
-# Панель администратора
-@method_decorator(decorators_admin, name='dispatch')
+@method_decorator([login_required, user_passes_test(is_admin)], name='dispatch')
 class AdminDashboardView(ListView, FormMixin):
     model = UserProfile
     form_class = UserProfileForm

@@ -1,19 +1,27 @@
 {% extends 'base.html' %}
 {% block title %}Вход{% endblock %}
 {% block content %}
-<h2>Вход в систему</h2>
-{% if error %}
-<p style="color: red;">{{ error }}</p>
-{% endif %}
+<h2>Вход</h2>
 <form method="post">
     {% csrf_token %}
+    {% if form.errors %}
+        <ul>
+        {% for error in form.non_field_errors %}
+            <li>{{ error }}</li>
+        {% endfor %}
+        {% for field in form %}
+            {% for error in field.errors %}
+                <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
     <p>
-        <label for="username">Имя пользователя:</label>
-        <input type="text" name="username" id="username">
+        <label for="{{ form.username.id_for_label }}">Имя пользователя:</label>
+        {{ form.username }}
     </p>
     <p>
-        <label for="password">Пароль:</label>
-        <input type="password" name="password" id="password">
+        <label for="{{ form.password.id_for_label }}">Пароль:</label>
+        {{ form.password }}
     </p>
     <button type="submit">Войти</button>
 </form>

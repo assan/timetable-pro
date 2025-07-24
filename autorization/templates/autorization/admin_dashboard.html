@@ -1,27 +1,58 @@
 {% extends 'base.html' %}
 {% block title %}Панель администратора{% endblock %}
 {% block content %}
-<h2>Панель администратора</h2>
-<h3>Создать учетную запись</h3>
+<h2>Создать пользователя</h2>
 <form method="post">
     {% csrf_token %}
-    {{ form.as_p }}
+    {% if form.errors %}
+        <ul>
+        {% for field in form %}
+            {% for error in field.errors %}
+                <li>{{ error }}</li>
+            {% endfor %}
+        {% endfor %}
+        {% for error in form.non_field_errors %}
+            <li>{{ error }}</li>
+        {% endfor %}
+        </ul>
+    {% endif %}
+    <p>
+        <label for="{{ form.username.id_for_label }}">Имя пользователя:</label>
+        {{ form.username }}
+    </p>
+    <p>
+        <label for="{{ form.password.id_for_label }}">Пароль:</label>
+        {{ form.password }}
+    </p>
+    <p>
+        <label for="{{ form.name.id_for_label }}">Имя:</label>
+        {{ form.name }}
+    </p>
+    <p>
+        <label for="{{ form.role.id_for_label }}">Роль:</label>
+        {{ form.role }}
+    </p>
+    <p>
+        <label for="{{ form.subject.id_for_label }}">Предмет:</label>
+        {{ form.subject }}
+    </p>
+    <p>
+        <label for="{{ form.teacher.id_for_label }}">Учитель:</label>
+        {{ form.teacher }}
+    </p>
     <button type="submit">Создать</button>
 </form>
-<h3>Список пользователей</h3>
+<h2>Список пользователей</h2>
 <table>
     <tr>
         <th>Имя пользователя</th>
-        <th>Имя</th>
         <th>Роль</th>
     </tr>
     {% for user in users %}
     <tr>
         <td>{{ user.user.username }}</td>
-        <td>{{ user.user.student.name|default:user.user.teacher.name }}</td>
         <td>{{ user.get_role_display }}</td>
     </tr>
     {% endfor %}
 </table>
-<p><a href="{% url 'autorization:logout' %}">Выйти</a></p>
 {% endblock %}

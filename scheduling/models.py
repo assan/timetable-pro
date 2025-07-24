@@ -31,7 +31,7 @@ class Student(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     name = models.CharField(max_length=50)
     subject = models.ForeignKey('Subject', on_delete=models.CASCADE)
-    teacher = models.ForeignKey('Teacher', on_delete=models.CASCADE)
+    teacher = models.ForeignKey('Teacher', on_delete=models.CASCADE, null=True, blank=True)  # Изменено
     times_per_week = models.IntegerField(default=3)
     city_hours = models.IntegerField(default=2)
     autodrom_hours = models.IntegerField(default=8)
