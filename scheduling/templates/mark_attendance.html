@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block title %}
+Отметить посещения
+{% endblock %}
+{% block content %}
+    <style>
+        .attendance-radio {
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+        .attendance-radio input[type="radio"] {
+            margin: 0;
+        }
+        .hours-info {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
+    <h1>Проведённые занятия по вождению</h1>
+    {% for day, lessons in schedule.items %}
+        <h2>{{ lessons.0.get_day_of_week_display }}</h2>
+        <form method="post" action="{% url 'mark_attendance' %}">
+            {% csrf_token %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Студент</th>
+                        <th>Предмет</th>
+                        <th>Учитель</th>
+                        <th>Время</th>
+                        <th>Тип занятия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for lesson in lessons %}
+                        <tr>
+                            <td>{{ lesson.student.name }}</td>
+                            <td>{{ lesson.subject.name }}</td>
+                            <td>{{ lesson.teacher.name }}</td>
+                            <td>{{ lesson.time_slot.start_time }} - {{ lesson.time_slot.end_time }}</td>
+                            <td class="attendance-radio">
+                                <label>
+                                    <input type="radio"
+                                           name="lesson_type_{{ lesson.id }}"
+                                           value="autodrom"
+                                           {% if lesson.lesson_type == 'autodrom' %}checked{% endif %}>
+                                    Автодром
+                                </label>
+                                <label>
+                                    <input type="radio"
+                                           name="lesson_type_{{ lesson.id }}"
+                                           value="city"
+                                           {% if lesson.lesson_type == 'city' %}checked{% endif %}>
+                                    Город
+                                </label>
+                                <label>
+                                    <input type="radio"
+                                           name="lesson_type_{{ lesson.id }}"
+                                           value=""
+                                           {% if lesson.lesson_type == '' %}checked{% endif %}>
+                                    Не выбрано
+                                </label>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5">Нет занятий</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% if lessons %}
+                <button type="submit" name="save">Сохранить</button>
+                <button type="submit" name="confirm">Засчитать посещения</button>
+            {% endif %}
+        </form>
+        {% if lessons %}
+            <div class="hours-info">
+                {% for lesson in lessons %}
+                    <p>{{ lesson.student.name }}:
+                       Автодром - {{ lesson.student.autodrom_hours }} ч.,
+                       Город - {{ lesson.student.city_hours }} ч.</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endfor %}
+{% endblock %}

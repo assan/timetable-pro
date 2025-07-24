@@ -7,6 +7,8 @@ from django.http import HttpResponseNotFound, JsonResponse
 from .models import Student, Teacher, Subject, TimeSlot, Lesson
 from .forms import StudentForm, TeacherForm, SubjectForm, TimeSlotForm
 from .optimization import calculate_schedule
+from django.contrib import messages
+from datetime import date
 
 # Расчет расписания
 class CalculateScheduleView(View):
@@ -265,3 +267,51 @@ def get_teachers(request):
     subject_id = request.GET.get('subject_id')
     teachers = Teacher.objects.filter(subject_id=subject_id).select_related('subject').values('id', 'name')
     return JsonResponse(list(teachers), safe=False)
+
+
+def mark_attendance(request):
+    if request.method == 'POST':
+        if 'save' in request.POST:
+            # Обработка сохранения типа занятия
+            for key, value in request.POST.items():
+                if key.startswith('lesson_type_'):
+                    lesson_id = key.split('_')[2]
+                    lesson = Lesson.objects.get(id=lesson_id)
+                    lesson.lesson_type = value
+                    lesson.is_attended = value in ['autodrom', 'city']
+                    lesson.save()
+            messages.success(request, 'Типы занятий сохранены')
+
+        elif 'confirm' in request.POST:
+            # Обработка подтверждения посещений
+            for key, value in request.POST.items():
+                if key.startswith('lesson_type_'):
+                    lesson_id = key.split('_')[2]
+                    lesson = Lesson.objects.get(id=lesson_id)
+                    if value in ['autodrom', 'city'] and lesson.is_attended:
+                        student = lesson.student
+                        if value == 'autodrom' and student.autodrom_hours > 0:
+                            student.autodrom_hours -= 1
+                        elif value == 'city' and student.city_hours > 0:
+                            student.city_hours -= 1
+                        student.save()
+                        # Сбрасываем lesson_type и is_attended после зачёта
+                        lesson.lesson_type = ''
+                        lesson.is_attended = False
+                        lesson.save()
+            messages.success(request, 'Посещения засчитаны')
+
+        return redirect('mark_attendance')
+
+    # Получение расписания на текущую неделю
+    # today = date.today()
+    schedule = {}
+    for day in range(7):
+        lessons = Lesson.objects.filter(
+            day_of_week=day
+            # time_slot__start_time__gte=today
+        ).order_by('time_slot__start_time')
+        if lessons:
+            schedule[day] = lessons
+
+    return render(request, 'mark_attendance.html', {'schedule': schedule})

@@ -52,10 +52,13 @@ def init_availability():
             if getattr(student, day_of_week):
                 teacher = student.teacher
                 subject = student.subject
-                free_time = getattr(student, day_of_week)
-                sft, eft = parse_start_end(free_time)
+                student_free_time = getattr(student, day_of_week)
+                sfts, efts = parse_start_end(student_free_time)
+                teacher_free_time = getattr(teacher, day_of_week)
+                sftt, eftt = parse_start_end(teacher_free_time)
                 for time_slot in time_slots:
-                    if sft <= time_slot.start_minutes and eft >= time_slot.end_minutes:
+                    if sfts <= time_slot.start_minutes and efts >= time_slot.end_minutes \
+                            and sftt <= time_slot.start_minutes and eftt >= time_slot.end_minutes:
                         availabilities.append(
                             Availability(
                                 student=student,
@@ -76,9 +79,10 @@ def calculate_schedule():
     subjects = Subject.objects.all()
     time_slots = TimeSlot.objects.all()
     availabilities = Availability.objects.select_related('student', 'teacher', 'subject', 'time_slot').all()
-
+# Создание модели
     model = LpProblem(name="templates", sense=LpMaximize)
-
+#Переменные: x[i][j][y][d][t] = 1 если урок y для студента i и учителя j назначен на день d
+#в временной слот t, иначе 0
     # Переменные только для доступных комбинаций
     x = LpVariable.dicts(
         "x",
@@ -88,18 +92,19 @@ def calculate_schedule():
     )
 
     # Ограничения
+    #1. Каждый учитель может проводить только один урок в одно и то же время
     T1 = LpVariable.dicts("T1", [(d, t.id, j.id) for d in range(7) for t in time_slots for j in teachers], 0, 1, LpInteger)
     for j in teachers:
         for d in range(7):
             for t in time_slots:
                 model += T1[d, t.id, j.id] == lpSum(x.get((i.id, j.id, y.id, d, t.id), 0) for i in students for y in subjects)
                 model += T1[d, t.id, j.id] <= 1
-
+#2. Каждый ученик может посещать только один урок в одно и то же время
     for i in students:
         for d in range(7):
             for t in time_slots:
                 model += lpSum(x.get((i.id, j.id, y.id, d, t.id), 0) for j in teachers for y in subjects) <= 1
-
+#3. Каждый ученик может посещать не более одного урока по одному предмету в день
     for i in students:
         for y in subjects:
             for d in range(7):
@@ -107,26 +112,26 @@ def calculate_schedule():
 
     # Предварительно вычисленные пересечения
     overlapping_pairs = [(t1, t2) for t1 in time_slots for t2 in time_slots if t1 != t2 and is_overlapping(t1, t2)]
-
+#4. Только одно занятие в пересекающихся отрезках времени для каждого учителя
     for j in teachers:
         for d in range(7):
             for t1, t2 in overlapping_pairs:
                 model += lpSum(x.get((i.id, j.id, y.id, d, t1.id), 0) for i in students for y in subjects) + \
                          lpSum(x.get((i.id, j.id, y.id, d, t2.id), 0) for i in students for y in subjects) <= 1
-
+#5. Только одно занятие в пересекающихся отрезках времени для каждого уеника
     for i in students:
         for d in range(7):
             for t1, t2 in overlapping_pairs:
                 model += lpSum(x.get((i.id, j.id, y.id, d, t1.id), 0) for j in teachers for y in subjects) + \
                          lpSum(x.get((i.id, j.id, y.id, d, t2.id), 0) for j in teachers for y in subjects) <= 1
-
+#6. Ограничение спроса - количество занятий в неделю для каждого ученика не превышает количества запрошенных им занятий
     for i in students:
         model += lpSum(x.get((i.id, j.id, y.id, d, t.id), 0) for d in range(7) for j in teachers for y in subjects for t in time_slots) <= i.times_per_week
-
+# Постороение целевой функции - сумма количества проведённых уроков
     model += lpSum(x.values())
-
+#Решение модели
     status = model.solve()
-
+#Выгрузка рассчитанного расписания в модель Lessons
     if status:
         Lesson.objects.all().delete()
         for a in availabilities:

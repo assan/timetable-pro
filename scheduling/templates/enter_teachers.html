@@ -13,6 +13,13 @@
     <tr>
         <th>Имя инструктора</th>
         <th>Вид трансмиссии на учёбной машине</th>
+        <th>Понедельник</th>
+        <th>Вторник</th>
+        <th>Среда</th>
+        <th>Четверг</th>
+         <th>Пятница</th>
+         <th>Суббота</th>
+         <th>Воскресенье</th>
         <th></th>
         <th></th>
 
@@ -21,6 +28,13 @@
     <tr>
         <td>{{teacher.name}}  </td>
         <td>{{teacher.subject}}  </td>
+        <td>{{ teacher.monday_free_time }}</td>
+         <td>{{ teacher.tuesday_free_time }}</td>
+         <td>{{ teacher.wednesday_free_time }}</td>
+         <td>{{ teacher.thursday_free_time }}</td>
+         <td>{{ teacher.friday_free_time }}</td>
+         <td>{{ teacher.saturday_free_time }}</td>
+        <td>{{ teacher.sunday_free_time }}</td>
         <td><a href="edit/{{teacher.id}}">Изменить</a> </td>
         <td><a href="delete/{{teacher.id}}">Удалить</a></td>
     </tr>

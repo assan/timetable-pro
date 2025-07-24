@@ -8,6 +8,13 @@ class Subject(models.Model):
 class Teacher(models.Model):
     name = models.CharField(max_length=100)
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE, default=1)
+    monday_free_time = models.CharField(max_length=100, default="", null=True, blank=True)
+    tuesday_free_time = models.CharField(max_length=100, default="", null=True, blank=True)
+    wednesday_free_time = models.CharField(max_length=100, default="", null=True, blank=True)
+    thursday_free_time = models.CharField(max_length=100, default="", null=True, blank=True)
+    friday_free_time = models.CharField(max_length=100, default="", null=True, blank=True)
+    saturday_free_time = models.CharField(max_length=100, default="", null=True, blank=True)
+    sunday_free_time = models.CharField(max_length=100, default="", null=True, blank=True)
     def __str__(self):
         return self.name
 
@@ -15,7 +22,9 @@ class Student(models.Model):
     name = models.CharField(max_length=50)
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
     teacher=models.ForeignKey(Teacher,on_delete=models.CASCADE)
-    times_per_week=models.IntegerField(default=7)
+    times_per_week=models.IntegerField(default=3)
+    city_hours = models.IntegerField(default=2)
+    autodrom_hours = models.IntegerField(default=8)
     monday_free_time = models.CharField(max_length=100, default="", null = True, blank = True)
     tuesday_free_time = models.CharField(max_length=100, default="", null = True, blank = True)
     wednesday_free_time = models.CharField(max_length=100, default="", null = True, blank = True)
@@ -67,12 +76,18 @@ class Lesson(models.Model):
         (5, 'Суббота'),
         (6, 'Воскресенье'),
     )
-
+    LESSON_TYPES = (
+        ('autodrom', 'Автодром'),
+        ('city', 'Город'),
+        ('', 'Не выбрано'),
+    )
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
     day_of_week = models.IntegerField(choices=DAYS_OF_WEEK)
     time_slot = models.ForeignKey(TimeSlot, on_delete=models.CASCADE)
+    is_attended = models.BooleanField(default=False)
+    lesson_type = models.CharField(max_length=10, choices=LESSON_TYPES, default='', blank=True)
 
     def __str__(self):
-        return f"{self.student} - {self.subject} - {self.teacher} - {self.get_day_of_week_display()} - {self.time_slot}"
+        return f"{self.student} - {self.subject} - {self.teacher} - {self.get_day_of_week_display()} - {self.time_slot} - {self.get_lesson_type_display()}"

@@ -126,6 +126,13 @@ td a:hover {
     color: #0056b3;
     text-decoration: underline;
 }
+.attendance-checkbox {
+    min-width: 100px; /* или другое подходящее значение */
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
 
 /* Стили для страницы ошибки */
 .error {

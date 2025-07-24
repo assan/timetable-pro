@@ -19,7 +19,7 @@ class StudentForm(forms.ModelForm):
     class Meta:
         model= Student
         fields='__all__'
-        labels = {'name': 'Имя',
+        labels = {'name': 'Имя курсанта',
                   'subject':'Тип коробки передач',
                   'teacher':'Инструктор',
                   'times_per_week':'Желаемое количество занятий в неделю',
@@ -51,8 +51,16 @@ class SubjectForm(forms.ModelForm):
 class TeacherForm(forms.ModelForm):
     class Meta:
         model = Teacher
-        fields=['name','subject']
-        labels={'name':'Имя инструктора','subject':'Трансмиссия на учёбной машине'}
+        fields='__all__'
+        labels = {'name': 'Имя инструктора',
+                  'subject': 'Трансмиссия на учёбной машине',
+                  'monday_free_time': "Свободное время в понедельник",
+                  'tuesday_free_time': "Свободное время во вторник",
+                  'wednesday_free_time': "Свободное время в среду",
+                  'thursday_free_time': "Свободное время в четверг",
+                  'friday_free_time': "Свободное время в пятницу",
+                  'saturday_free_time': "Свободное время в субботу",
+                  'sunday_free_time': "Свободное время в воскресенье"}
 class TimeSlotForm(forms.ModelForm):
     class Meta:
         model = TimeSlot

@@ -15,6 +15,7 @@ from .views import (
     TimeSlotUpdateView,
     TimeSlotDeleteView,
     get_teachers,
+    mark_attendance,
 )
 
 urlpatterns = [
@@ -34,4 +35,5 @@ urlpatterns = [
     path('time_slots/edit/<int:pk>/', TimeSlotUpdateView.as_view(), name='edit_time_slot'),
     path('time_slots/delete/<int:pk>/', TimeSlotDeleteView.as_view(), name='delete_time_slot'),
     path('get_teachers/', get_teachers, name='get_teachers'),
+    path('attendance/',mark_attendance, name = 'mark_attendance'),
 ]
