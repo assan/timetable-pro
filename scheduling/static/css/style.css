@@ -144,7 +144,20 @@ td a:hover {
     max-width: 600px;
     margin: 50px auto;
 }
-
+ .attendance-radio {
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+ }
+ .attendance-radio input[type="radio"] {
+            margin: 0;
+ }
+ .hours-info {
+            margin-top: 20px;
+            font-weight: bold;
+}
 .error h1 {
     color: #dc3545;
 }

@@ -1,17 +1,8 @@
 # templates/forms.py
 
 from django import forms
+from django.contrib.auth.models import User
 from .models import *
-
-# class AvailabilityForm(forms.ModelForm):
-#     student = forms.ModelChoiceField(queryset=Student.objects.all())
-#     time_slot = forms.ModelChoiceField(queryset=TimeSlot.objects.all())
-#     day_of_week = forms.ChoiceField(choices=Availability.DAYS_OF_WEEK)
-#     available = forms.BooleanField(required=False)
-#
-#     class Meta:
-#         model = Availability
-#         fields = ['student', 'time_slot', 'day_of_week', 'available']
 
 class StudentForm(forms.ModelForm):
     subject = forms.ModelChoiceField(queryset=Subject.objects.all(), label = "Трансмиссия")
@@ -22,6 +13,8 @@ class StudentForm(forms.ModelForm):
         labels = {'name': 'Имя курсанта',
                   'subject':'Тип коробки передач',
                   'teacher':'Инструктор',
+                  'city_hours':'Часы вождения в городе',
+                  'autodrom_hours':'Часы вождения на автодроме',
                   'times_per_week':'Желаемое количество занятий в неделю',
                   'monday_free_time':"Свободное время в понедельник",
                   'tuesday_free_time':"Свободное время во вторник",
@@ -66,3 +59,4 @@ class TimeSlotForm(forms.ModelForm):
         model = TimeSlot
         fields = ['start_time','end_time']
         labels={'start_time':'Время начала занятия','end_time':'Время конца занятия'}
+

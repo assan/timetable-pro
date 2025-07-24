@@ -52,7 +52,7 @@
 <script type="text/javascript">
     $(document).ready(function () {
         $('#id_subject').change(function () {
-            var url = "{% url 'get_teachers' %}";
+            var url = "{% url 'scheduling:get_teachers' %}";
             var subjectId = $(this).val();
 
             $.ajax({

@@ -4,25 +4,13 @@
 {% endblock %}
 {% block content %}
     <style>
-        .attendance-radio {
-            text-align: center;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-        }
-        .attendance-radio input[type="radio"] {
-            margin: 0;
-        }
-        .hours-info {
-            margin-top: 20px;
-            font-weight: bold;
+
         }
     </style>
     <h1>Проведённые занятия по вождению</h1>
     {% for day, lessons in schedule.items %}
         <h2>{{ lessons.0.get_day_of_week_display }}</h2>
-        <form method="post" action="{% url 'mark_attendance' %}">
+        <form method="post" action="{% url 'scheduling:mark_attendance' %}">
             {% csrf_token %}
             <table>
                 <thead>
@@ -73,7 +61,6 @@
                 </tbody>
             </table>
             {% if lessons %}
-                <button type="submit" name="save">Сохранить</button>
                 <button type="submit" name="confirm">Засчитать посещения</button>
             {% endif %}
         </form>

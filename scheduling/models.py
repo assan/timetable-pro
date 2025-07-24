@@ -1,13 +1,21 @@
 # templates/models.py
 
 from django.db import models
+from django.contrib.auth.models import User
+
+
+#Модель для хранения видов предметов/типов трансмиссий
 class Subject(models.Model):
     name = models.CharField(max_length=20)
     def __str__(self):
         return self.name
+
+
+# Модель для хранения инструкторов
 class Teacher(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     name = models.CharField(max_length=100)
-    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, default=1)
+    subject = models.ForeignKey('Subject', on_delete=models.CASCADE, default=1)
     monday_free_time = models.CharField(max_length=100, default="", null=True, blank=True)
     tuesday_free_time = models.CharField(max_length=100, default="", null=True, blank=True)
     wednesday_free_time = models.CharField(max_length=100, default="", null=True, blank=True)
@@ -15,27 +23,29 @@ class Teacher(models.Model):
     friday_free_time = models.CharField(max_length=100, default="", null=True, blank=True)
     saturday_free_time = models.CharField(max_length=100, default="", null=True, blank=True)
     sunday_free_time = models.CharField(max_length=100, default="", null=True, blank=True)
+
     def __str__(self):
         return self.name
-
+# Модель для хранения курсантов
 class Student(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     name = models.CharField(max_length=50)
-    subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
-    teacher=models.ForeignKey(Teacher,on_delete=models.CASCADE)
-    times_per_week=models.IntegerField(default=3)
+    subject = models.ForeignKey('Subject', on_delete=models.CASCADE)
+    teacher = models.ForeignKey('Teacher', on_delete=models.CASCADE)
+    times_per_week = models.IntegerField(default=3)
     city_hours = models.IntegerField(default=2)
     autodrom_hours = models.IntegerField(default=8)
-    monday_free_time = models.CharField(max_length=100, default="", null = True, blank = True)
-    tuesday_free_time = models.CharField(max_length=100, default="", null = True, blank = True)
-    wednesday_free_time = models.CharField(max_length=100, default="", null = True, blank = True)
-    thursday_free_time = models.CharField(max_length=100, default="", null = True, blank = True)
-    friday_free_time = models.CharField(max_length=100, default="", null = True, blank = True)
-    saturday_free_time = models.CharField(max_length=100, default="", null = True, blank = True)
-    sunday_free_time = models.CharField(max_length=100, default="", null = True, blank = True)
+    monday_free_time = models.CharField(max_length=100, default="", null=True, blank=True)
+    tuesday_free_time = models.CharField(max_length=100, default="", null=True, blank=True)
+    wednesday_free_time = models.CharField(max_length=100, default="", null=True, blank=True)
+    thursday_free_time = models.CharField(max_length=100, default="", null=True, blank=True)
+    friday_free_time = models.CharField(max_length=100, default="", null=True, blank=True)
+    saturday_free_time = models.CharField(max_length=100, default="", null=True, blank=True)
+    sunday_free_time = models.CharField(max_length=100, default="", null=True, blank=True)
 
     def __str__(self):
         return self.name
-
+# Модель для хранения временных слотов
 class TimeSlot(models.Model):
     start_time = models.CharField(max_length=20)
     end_time = models.CharField(max_length=20)
@@ -44,7 +54,7 @@ class TimeSlot(models.Model):
 
     def __str__(self):
         return f"{self.start_time} - {self.end_time}"
-
+# Модель для хранения доступности конкретного временного слота для конкретной пары курсант-инструктор
 class Availability(models.Model):
     DAYS_OF_WEEK = (
         (0, 'Понедельник'),
@@ -65,7 +75,7 @@ class Availability(models.Model):
 
     def __str__(self):
         return f"{self.student} - {self.get_day_of_week_display()} - {self.time_slot} - {'Available' if self.available else 'Not Available'}"
-
+# Модель для хранения конечного расписания
 class Lesson(models.Model):
     DAYS_OF_WEEK = (
         (0, 'Понедельник'),

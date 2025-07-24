@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Панель администратора{% endblock %}
+{% block content %}
+<h2>Панель администратора</h2>
+<h3>Создать учетную запись</h3>
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Создать</button>
+</form>
+<h3>Список пользователей</h3>
+<table>
+    <tr>
+        <th>Имя пользователя</th>
+        <th>Имя</th>
+        <th>Роль</th>
+    </tr>
+    {% for user in users %}
+    <tr>
+        <td>{{ user.user.username }}</td>
+        <td>{{ user.user.student.name|default:user.user.teacher.name }}</td>
+        <td>{{ user.get_role_display }}</td>
+    </tr>
+    {% endfor %}
+</table>
+<p><a href="{% url 'autorization:logout' %}">Выйти</a></p>
+{% endblock %}

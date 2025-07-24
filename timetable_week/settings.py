@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'scheduling',
+    'autorization.apps.AutorizationConfig',
 ]
 
 MIDDLEWARE = [
@@ -118,7 +119,12 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'scheduling/static']
-
+# Настройка URL для логина
+LOGIN_URL = 'autorization:login'
+LANGUAGE_CODE = 'ru-ru'
+TIME_ZONE = 'UTC'
+USE_I18N = True
+USE_TZ = True
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
