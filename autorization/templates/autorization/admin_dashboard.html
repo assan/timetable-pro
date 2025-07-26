@@ -2,46 +2,57 @@
 {% block title %}Панель администратора{% endblock %}
 {% block content %}
 <h2>Создать пользователя</h2>
-<form method="post">
+
+<!-- Отображение сообщений -->
+{% if messages %}
+    <ul class="messages">
+        {% for message in messages %}
+            <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+        {% endfor %}
+    </ul>
+{% endif %}
+
+<form method="post" id="user-create-form">
     {% csrf_token %}
     {% if form.errors %}
-        <ul>
-        {% for field in form %}
-            {% for error in field.errors %}
+        <ul class="errorlist">
+            {% for field in form %}
+                {% for error in field.errors %}
+                    <li>{{ field.label }}: {{ error }}</li>
+                {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
                 <li>{{ error }}</li>
             {% endfor %}
-        {% endfor %}
-        {% for error in form.non_field_errors %}
-            <li>{{ error }}</li>
-        {% endfor %}
         </ul>
     {% endif %}
-    <p>
-        <label for="{{ form.username.id_for_label }}">Имя пользователя:</label>
-        {{ form.username }}
-    </p>
-    <p>
-        <label for="{{ form.password.id_for_label }}">Пароль:</label>
-        {{ form.password }}
-    </p>
-    <p>
-        <label for="{{ form.name.id_for_label }}">Имя:</label>
-        {{ form.name }}
-    </p>
-    <p>
+    <div>
         <label for="{{ form.role.id_for_label }}">Роль:</label>
         {{ form.role }}
-    </p>
-    <p>
-        <label for="{{ form.subject.id_for_label }}">Предмет:</label>
+    </div>
+    <div id="name-field">
+        <label for="{{ form.name.id_for_label }}">Имя:</label>
+        {{ form.name }}
+    </div>
+    <div id="subject-field" style="display: none;">
+        <label for="{{ form.subject.id_for_label }}">Тип трансмиссии:</label>
         {{ form.subject }}
-    </p>
-    <p>
-        <label for="{{ form.teacher.id_for_label }}">Учитель:</label>
+    </div>
+    <div id="teacher-field" style="display: none;">
+        <label for="{{ form.teacher.id_for_label }}">Инструктор:</label>
         {{ form.teacher }}
-    </p>
+    </div>
+    <div>
+        <label for="{{ form.username.id_for_label }}">Имя пользователя:</label>
+        {{ form.username }}
+    </div>
+    <div>
+        <label for="{{ form.password.id_for_label }}">Пароль:</label>
+        {{ form.password }}
+    </div>
     <button type="submit">Создать</button>
 </form>
+
 <h2>Список пользователей</h2>
 <table>
     <tr>
@@ -55,4 +66,93 @@
     </tr>
     {% endfor %}
 </table>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const roleField = document.getElementById('{{ form.role.id_for_label }}');
+    const nameField = document.getElementById('name-field');
+    const subjectField = document.getElementById('subject-field');
+    const teacherField = document.getElementById('teacher-field');
+    const subjectSelect = document.getElementById('{{ form.subject.id_for_label }}');
+    const teacherSelect = document.getElementById('{{ form.teacher.id_for_label }}');
+
+    // Проверка наличия элементов
+    if (!roleField) console.error('roleField not found');
+    if (!nameField) console.error('nameField not found');
+    if (!subjectField) console.error('subjectField not found');
+    if (!teacherField) console.error('teacherField not found');
+    if (!subjectSelect) console.error('subjectSelect not found');
+    if (!teacherSelect) console.error('teacherSelect not found');
+
+    function updateFields() {
+        if (!roleField) {
+            console.error('Cannot update fields: roleField is null');
+            return;
+        }
+        const role = roleField.value;
+        console.log('Role changed to:', role); // Отладка
+        if (role === 'admin') {
+            nameField.style.display = 'block';
+            subjectField.style.display = 'none';
+            teacherField.style.display = 'none';
+        } else if (role === 'student') {
+            nameField.style.display = 'block';
+            subjectField.style.display = 'block';
+            teacherField.style.display = 'block';
+        } else if (role === 'teacher') {
+            nameField.style.display = 'block';
+            subjectField.style.display = 'block';
+            teacherField.style.display = 'none';
+        }
+    }
+
+    // Инициализация полей
+    updateFields();
+
+    // Обновление полей при изменении роли
+    if (roleField) {
+        roleField.addEventListener('change', function() {
+            console.log('Change event triggered'); // Отладка
+            updateFields();
+        });
+    }
+
+    // Фильтрация инструкторов по трансмиссии
+    if (subjectSelect) {
+        subjectSelect.addEventListener('change', function() {
+            const subjectId = this.value;
+            console.log('Fetching teachers for subject:', subjectId);
+            if (subjectId && roleField.value === 'student') {
+                fetch("{% url 'autorization:get_teachers_by_subject' 999 %}".replace('999', subjectId))
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok: ' + response.statusText);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Received data:', data);
+                        teacherSelect.innerHTML = '<option value="">---------</option>';
+                        if (data.teachers.length === 0) {
+                            teacherSelect.innerHTML += '<option value="">Нет инструкторов</option>';
+                        } else {
+                            data.teachers.forEach(teacher => {
+                                const option = document.createElement('option');
+                                option.value = teacher.id;
+                                option.text = teacher.name;
+                                teacherSelect.appendChild(option);
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Ошибка:', error);
+                        teacherSelect.innerHTML = '<option value="">Ошибка загрузки</option>';
+                    });
+            } else {
+                teacherSelect.innerHTML = '<option value="">---------</option>';
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

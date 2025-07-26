@@ -1,4 +1,4 @@
-# templates/models.py
+# scheduling.models.py
 
 from django.db import models
 from django.contrib.auth.models import User
