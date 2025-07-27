@@ -1,53 +1,58 @@
-<!-- scheduling/templates/scheduling/enter_students.html -->
 {% extends 'base.html' %}
-{%block title%} Курсанты {% endblock %}
-{%block meta%}
+{% block title %}Курсанты{% endblock %}
+{% block meta %}
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 {% endblock %}
 {% block content %}
-
-<h2>Введите данные курсанта</h2>
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Отправить</button>
-</form>
-<h1> Свободное время курсантов</h1>
-<table>
-    <tr>
-        <th>Имя курсанта</th>
-        <th>Имя инструктора</th>
-        <th>Тип трансмиссии</th>
-        <th>Занятий в неделю</th>
-        <th>Понедельник</th>
-        <th>Вторник</th>
-        <th>Среда</th>
-        <th>Четверг</th>
-         <th>Пятница</th>
-         <th>Суббота</th>
-         <th>Воскресенье</th>
-        <th></th>
-          <th></th>
-    </tr>
-    {% for student in students %}
-    <tr>
-        <td>{{ student.name }}</td>
-        <td>{{ student.teacher }}</td>
-        <td>{{ student.subject }}</td>
-        <td>{{student.times_per_week}}</td>
-        <td>{{ student.monday_free_time }}</td>
-         <td>{{ student.tuesday_free_time }}</td>
-         <td>{{ student.wednesday_free_time }}</td>
-         <td>{{ student.thursday_free_time }}</td>
-         <td>{{ student.friday_free_time }}</td>
-         <td>{{ student.saturday_free_time }}</td>
-        <td>{{ student.sunday_free_time }}</td>
-        <td><a href="edit/{{ student.id }}">Изменить</a></td>
-        <td><a href="delete/{{ student.id }}">Удалить</a></td>
-    </tr>
-    {% endfor %}
-</table>
-
+<div class="container">
+    <h2>Введите данные курсанта</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Отправить</button>
+    </form>
+    <h1>Свободное время курсантов</h1>
+</div>
+<div class="table-wrapper">
+    <table>
+        <tr>
+            <th>Имя</th>
+            <th>Инструктор</th>
+            <th>Трансмиссия</th>
+            <th>Занятий</th>
+            <th>Автодром</th>
+            <th>Город</th>
+            <th title="Понедельник">Пн</th>
+            <th title="Вторник">Вт</th>
+            <th title="Среда">Ср</th>
+            <th title="Четверг">Чт</th>
+            <th title="Пятница">Пт</th>
+            <th title="Суббота">Сб</th>
+            <th title="Воскресенье">Вс</th>
+            <th></th>
+            <th></th>
+        </tr>
+        {% for student in students %}
+        <tr>
+            <td data-label="Имя">{{ student.name }}</td>
+            <td data-label="Инструктор">{{ student.teacher }}</td>
+            <td data-label="Трансмиссия">{{ student.subject }}</td>
+            <td data-label="Занятий">{{ student.times_per_week }}</td>
+            <td data-label="Автодром">{{ student.autodrom_hours }}</td>
+            <td data-label="Город">{{ student.city_hours }}</td>
+            <td data-label="Пн">{{ student.monday_free_time }}</td>
+            <td data-label="Вт">{{ student.tuesday_free_time }}</td>
+            <td data-label="Ср">{{ student.wednesday_free_time }}</td>
+            <td data-label="Чт">{{ student.thursday_free_time }}</td>
+            <td data-label="Пт">{{ student.friday_free_time }}</td>
+            <td data-label="Сб">{{ student.saturday_free_time }}</td>
+            <td data-label="Вс">{{ student.sunday_free_time }}</td>
+            <td><a href="{% url 'scheduling:student_edit' student.id %}">Изменить</a></td>
+            <td><a href="{% url 'scheduling:student_delete' student.id %}">Удалить</a></td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
 
 <script type="text/javascript">
     $(document).ready(function () {
@@ -63,7 +68,7 @@
                 success: function (data) {
                     var select = $('#id_teacher');
                     select.empty();
-
+                    select.append($('<option></option>').attr('value', '').text('---------'));
                     $.each(data, function (index, item) {
                         select.append($('<option></option>').attr('value', item.id).text(item.name));
                     });

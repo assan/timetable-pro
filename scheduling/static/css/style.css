@@ -87,19 +87,85 @@ button:active, .btn:active {
     transform: translateY(0);
 }
 
-/* Стили для таблиц */
+form button[type="submit"] {
+    background-color: #dc3545;
+}
+
+form button[type="submit"]:hover {
+    background-color: #c82333;
+}
+
+form button[type="button"] {
+    background-color: #6c757d;
+    margin-left: 10px;
+}
+
+form button[type="button"]:hover {
+    background-color: #5a6268;
+}
+
+/* Стили для таблицы с прокруткой */
+.table-wrapper {
+    overflow-x: auto;
+    margin-bottom: 20px;
+    text-align: left;
+    margin-left: 0;
+    position: relative;
+}
+
 table {
-    width: 100%;
+    width: auto;
+    min-width: 100%;
     border-collapse: collapse;
     background-color: #fff;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px;
 }
 
 th, td {
     padding: 12px;
     text-align: left;
     border-bottom: 1px solid #ddd;
+    white-space: nowrap;
+}
+
+/* Фиксированный первый столбец */
+th:first-child, td:first-child {
+    position: sticky;
+    left: 0;
+    background-color: #fff;
+    z-index: 1;
+}
+
+th:first-child {
+    background-color: #007bff;
+}
+
+/* Фиксированная ширина столбцов */
+th:nth-child(4), td:nth-child(4), /* Занятий */
+th:nth-child(5), td:nth-child(5), /* Автодром */
+th:nth-child(6), td:nth-child(6) { /* Город */
+    width: 80px;
+    text-align: center;
+}
+
+/* Сжатие текста для столбцов с временем */
+th:nth-child(7), td:nth-child(7), /* Понедельник */
+th:nth-child(8), td:nth-child(8), /* Вторник */
+th:nth-child(9), td:nth-child(9), /* Среда */
+th:nth-child(10), td:nth-child(10), /* Четверг */
+th:nth-child(11), td:nth-child(11), /* Пятница */
+th:nth-child(12), td:nth-child(12), /* Суббота */
+th:nth-child(13), td:nth-child(13) { /* Воскресенье */
+    width: 100px;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Действия */
+th:nth-child(14), td:nth-child(14),
+th:nth-child(15), td:nth-child(15) {
+    width: 60px;
 }
 
 th {
@@ -126,40 +192,37 @@ td a:hover {
     color: #0056b3;
     text-decoration: underline;
 }
-.attendance-checkbox {
-    min-width: 100px; /* или другое подходящее значение */
-    text-align: center;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+
+/* Стили для сообщений */
+.messages {
+    list-style-type: none;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 4px;
 }
 
-/* Стили для страницы ошибки */
-.error {
-    text-align: center;
-    padding: 50px;
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    max-width: 600px;
-    margin: 50px auto;
+.messages .success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+    padding: 8px;
 }
- .attendance-radio {
-            text-align: center;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
- }
- .attendance-radio input[type="radio"] {
-            margin: 0;
- }
- .hours-info {
-            margin-top: 20px;
-            font-weight: bold;
+
+.messages .error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+    padding: 8px;
 }
-.error h1 {
-    color: #dc3545;
+
+.errorlist {
+    list-style-type: none;
+    padding: 10px;
+    margin: 10px 0;
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
 }
 
 /* Адаптивность для мобильных устройств */
@@ -190,5 +253,9 @@ td a:hover {
     td a {
         display: inline-block;
         margin: 5px 0;
+    }
+
+    th:first-child, td:first-child {
+        position: static; /* Отключаем sticky для мобильных */
     }
 }

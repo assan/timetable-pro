@@ -65,16 +65,11 @@ class StudentUpdateView(UpdateView):
             return HttpResponseNotFound("<h2>Курсант не найден</h2>")
 
 # Студенты: удаление
-@method_decorator(decorators, name='dispatch')
+@method_decorator([login_required, user_passes_test(is_admin)], name='dispatch')
 class StudentDeleteView(DeleteView):
     model = Student
     success_url = reverse_lazy('scheduling:students')
-
-    def get_object(self, queryset=None):
-        try:
-            return Student.objects.get(id=self.kwargs['pk'])
-        except Student.DoesNotExist:
-            return HttpResponseNotFound("<h2>Курсант не найден</h2>")
+    template_name = 'scheduling/student_confirm_delete.html'
 
 # Предметы: создание и список
 @method_decorator(decorators, name='dispatch')
