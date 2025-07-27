@@ -41,11 +41,9 @@ class UserProfileForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Устанавливаем порядок полей, чтобы role был первым
-        self.fields['role'].widget.attrs.update({'id': 'id_role'})  # Для JavaScript
-        # Делаем поле subject обязательным только для ролей student и teacher
-        self.fields['subject'].required = False
-        self.fields['teacher'].required = False
+        self.fields['role'].widget.attrs.update({'id': 'id_role'})
+        self.fields['subject'].widget.attrs.update({'id': 'id_subject'})
+        self.fields['teacher'].widget.attrs.update({'id': 'id_teacher'})
 
     def clean_username(self):
         username = self.cleaned_data['username']
@@ -62,8 +60,9 @@ class UserProfileForm(forms.ModelForm):
         if role == 'student':
             if not subject:
                 self.add_error('subject', 'Выберите тип трансмиссии для курсанта.')
-            # Проверяем, что выбранный инструктор соответствует выбранной трансмиссии
-            if teacher and subject and teacher.subject != subject:
+            if not teacher:
+                self.add_error('teacher', 'Выберите инструктора для курсанта.')
+            elif teacher and subject and teacher.subject != subject:
                 self.add_error('teacher', 'Инструктор должен соответствовать выбранному типу трансмиссии.')
         elif role == 'teacher':
             if not subject:
@@ -79,21 +78,18 @@ class UserProfileForm(forms.ModelForm):
         user_profile.user = user
         if commit:
             user_profile.save()
-            # Создаём запись в Student для роли student
             if user_profile.role == 'student' and not Student.objects.filter(user=user).exists():
                 subject = self.cleaned_data.get('subject') or Subject.objects.first()
                 teacher = self.cleaned_data.get('teacher')
-                if not teacher and Teacher.objects.exists():
-                    teacher = Teacher.objects.filter(subject=subject).first()
+                print(f"Saving student with teacher: {teacher}")  # Отладка
                 Student.objects.create(
                     user=user,
                     name=self.cleaned_data.get('name') or user.username,
                     subject=subject,
                     autodrom_hours=10,
                     city_hours=5,
-                    teacher=teacher if teacher else None
+                    teacher=teacher
                 )
-            # Создаём запись в Teacher для роли teacher
             elif user_profile.role == 'teacher' and not Teacher.objects.filter(user=user).exists():
                 subject = self.cleaned_data.get('subject') or Subject.objects.first()
                 Teacher.objects.create(

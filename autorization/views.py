@@ -79,6 +79,7 @@ class TeacherDashboardView(TemplateView):
         context['schedule'] = schedule
         return context
 
+# autorization/views.py
 @method_decorator([login_required, user_passes_test(is_admin)], name='dispatch')
 class AdminDashboardView(View):
     def get(self, request):
@@ -87,18 +88,16 @@ class AdminDashboardView(View):
         return render(request, 'autorization/admin_dashboard.html', {'form': form, 'users': users})
 
     def post(self, request):
+        print(request.POST)  # Отладка: выводим POST-данные
         form = UserProfileForm(request.POST)
         if form.is_valid():
-            user_profile = form.save()
-            # Определяем сообщение в зависимости от роли
-            role_display = dict(UserProfile.ROLES).get(user_profile.role, 'Пользователь')
+            print(form.cleaned_data)  # Отладка: выводим очищенные данные
+            form.save()
+            role_display = dict(UserProfile.ROLES).get(form.cleaned_data['role'], 'Пользователь')
             messages.success(request, f"{role_display} успешно создан!")
             return redirect('autorization:admin_dashboard')
         users = UserProfile.objects.all()
         return render(request, 'autorization/admin_dashboard.html', {'form': form, 'users': users})
-def get_teachers_by_subject(request, subject_id):
-    teachers = Teacher.objects.filter(subject_id=subject_id).values('id', 'name')
-    return JsonResponse({'teachers': list(teachers)})
 
 @method_decorator([login_required, user_passes_test(is_student)], name='dispatch')
 class StudentDashboardView(View):

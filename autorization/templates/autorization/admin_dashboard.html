@@ -3,7 +3,6 @@
 {% block content %}
 <h2>Создать пользователя</h2>
 
-<!-- Отображение сообщений -->
 {% if messages %}
     <ul class="messages">
         {% for message in messages %}
@@ -90,7 +89,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         const role = roleField.value;
-        console.log('Role changed to:', role); // Отладка
+        console.log('Role changed to:', role);
         if (role === 'admin') {
             nameField.style.display = 'block';
             subjectField.style.display = 'none';
@@ -112,7 +111,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Обновление полей при изменении роли
     if (roleField) {
         roleField.addEventListener('change', function() {
-            console.log('Change event triggered'); // Отладка
+            console.log('Change event triggered');
             updateFields();
         });
     }
