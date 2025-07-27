@@ -4,7 +4,7 @@ from .views import (
     SubjectListCreateView, SubjectUpdateView, SubjectDeleteView,
     TeacherListCreateView, TeacherUpdateView, TeacherDeleteView,
     TimeSlotListCreateView, TimeSlotUpdateView, TimeSlotDeleteView,
-    CalculateScheduleView, ScheduleView, get_teachers, mark_attendance
+    CalculateScheduleView, ScheduleView, get_teachers, mark_attendance, confirm_lessons
 )
 
 app_name = 'scheduling'
@@ -26,4 +26,5 @@ urlpatterns = [
     path('schedule/', ScheduleView.as_view(), name='schedule'),
     path('teachers/get/', get_teachers, name='get_teachers'),
     path('attendance/', mark_attendance, name='mark_attendance'),
+    path('confirm_lessons/', confirm_lessons, name='confirm_lessons'),
 ]

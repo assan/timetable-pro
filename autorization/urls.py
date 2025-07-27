@@ -10,4 +10,5 @@ urlpatterns = [
     path('teacher/dashboard/', TeacherDashboardView.as_view(), name='teacher_dashboard'),
     path('admin/dashboard/', AdminDashboardView.as_view(), name='admin_dashboard'),
     path('get_teachers_by_subject/<int:subject_id>/', get_teachers_by_subject, name='get_teachers_by_subject'),
+
 ]

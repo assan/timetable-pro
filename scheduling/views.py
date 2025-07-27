@@ -315,3 +315,31 @@ def mark_attendance(request):
             schedule[day] = lessons
 
     return render(request, 'scheduling/mark_attendance.html', {'schedule': schedule})
+@login_required
+def confirm_lessons(request):
+    if request.method == 'POST':
+        for lesson_id, value in request.POST.items():
+            if lesson_id.startswith('confirm_'):
+                lesson_id = lesson_id.replace('confirm_', '')
+                try:
+                    lesson = Lesson.objects.get(id=lesson_id)
+                    lesson.is_confirmed = ('true' in value)
+                    lesson.save()
+                except Lesson.DoesNotExist:
+                    pass
+        return redirect('scheduling:schedule')
+    return render(request, 'schedule.html', {'schedule': get_schedule_for_student(request.user.student)})  # Функция get_schedule_for_student должна быть реализована
+
+def get_schedule_for_student(student):
+    # Логика получения расписания для конкретного студента, например:
+    from django.utils import timezone
+    from datetime import timedelta
+    today = timezone.now().date()
+    schedule = {}
+    lessons = Lesson.objects.filter(student=student).order_by('time_slot__start_time')
+    for lesson in lessons:
+        day = lesson.time_slot.start_time.date()
+        if day not in schedule:
+            schedule[day] = []
+        schedule[day].append(lesson)
+    return schedule

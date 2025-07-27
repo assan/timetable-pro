@@ -98,6 +98,6 @@ class Lesson(models.Model):
     time_slot = models.ForeignKey(TimeSlot, on_delete=models.CASCADE)
     is_attended = models.BooleanField(default=False)
     lesson_type = models.CharField(max_length=10, choices=LESSON_TYPES, default='', blank=True)
-
+    is_confirmed = models.BooleanField(default=False)
     def __str__(self):
         return f"{self.student} - {self.subject} - {self.teacher} - {self.get_day_of_week_display()} - {self.time_slot} - {self.get_lesson_type_display()}"

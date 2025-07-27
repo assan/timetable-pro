@@ -13,6 +13,7 @@ body {
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 15px;
+    width: 100%; /* Гарантируем, что контейнер не превышает ширину экрана */
 }
 
 /* Заголовки */
@@ -104,28 +105,31 @@ form button[type="button"]:hover {
     background-color: #5a6268;
 }
 
-/* Стили для таблицы с прокруткой */
+/* Стили для таблицы */
 .table-wrapper {
-    overflow-x: auto;
     margin-bottom: 20px;
     text-align: left;
     margin-left: 0;
     position: relative;
+    overflow-x: hidden; /* Убираем горизонтальную прокрутку */
 }
 
+/* Настройка таблицы для mark_attendance.html */
 table {
-    width: auto;
-    min-width: 100%;
+    width: 100%; /* Таблица занимает всю ширину контейнера */
+    table-layout: auto; /* Автоматическая подстройка ширины под содержимое с ограничениями */
     border-collapse: collapse;
     background-color: #fff;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 th, td {
-    padding: 12px;
+    padding: 8px; /* Уменьшенный padding для компактности */
     text-align: left;
     border-bottom: 1px solid #ddd;
-    white-space: nowrap;
+    overflow-wrap: break-word; /* Перенос длинных слов */
+    font-size: 12px; /* Уменьшенный размер шрифта */
+    max-width: 120px; /* Ограничение максимальной ширины ячеек */
 }
 
 /* Фиксированный первый столбец */
@@ -140,7 +144,7 @@ th:first-child {
     background-color: #007bff;
 }
 
-/* Фиксированная ширина столбцов */
+/* Фиксированная ширина столбцов для enter_students.html */
 th:nth-child(4), td:nth-child(4), /* Занятий */
 th:nth-child(5), td:nth-child(5), /* Автодром */
 th:nth-child(6), td:nth-child(6) { /* Город */
@@ -148,7 +152,7 @@ th:nth-child(6), td:nth-child(6) { /* Город */
     text-align: center;
 }
 
-/* Сжатие текста для столбцов с временем */
+/* Сжатие текста для столбцов с временем в enter_students.html */
 th:nth-child(7), td:nth-child(7), /* Понедельник */
 th:nth-child(8), td:nth-child(8), /* Вторник */
 th:nth-child(9), td:nth-child(9), /* Среда */
@@ -162,10 +166,49 @@ th:nth-child(13), td:nth-child(13) { /* Воскресенье */
     text-overflow: ellipsis;
 }
 
-/* Действия */
+/* Действия в enter_students.html */
 th:nth-child(14), td:nth-child(14),
 th:nth-child(15), td:nth-child(15) {
     width: 60px;
+}
+
+/* Фиксированная ширина столбцов для mark_attendance.html */
+th:nth-child(1), td:nth-child(1), /* Студент */
+th:nth-child(2), td:nth-child(2), /* Предмет */
+th:nth-child(3), td:nth-child(3), /* Учитель */
+th:nth-child(4), td:nth-child(4) { /* Время */
+    width: 15%; /* Уменьшенная ширина для всех основных столбцов */
+    max-width: 100px; /* Ограничение ширины */
+    overflow: hidden;
+    text-overflow: ellipsis; /* Сокращение длинного текста */
+}
+
+th:nth-child(5), td:nth-child(5) { /* Тип занятия */
+    width: 10%; /* Уменьшенная ширина для radio-кнопок */
+    min-width: 70px; /* Минимальная ширина для читаемости */
+}
+
+/* Стили для radio-кнопок в таблице посещаемости */
+.attendance-radio {
+    display: flex;
+    flex-direction: column; /* Вертикальное расположение radio-кнопок */
+    gap: 4px; /* Уменьшенный отступ между radio-кнопками */
+    padding: 4px; /* Уменьшенный padding */
+}
+
+.attendance-radio label {
+    display: flex; /* Горизонтальное расположение radio-кнопки и текста */
+    align-items: center; /* Выравнивание по вертикали */
+    font-size: 11px; /* Уменьшенный размер шрифта */
+    cursor: pointer;
+}
+
+.attendance-radio input[type="radio"] {
+    margin-right: 4px; /* Уменьшенный отступ справа от radio-кнопки */
+    margin-left: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    flex-shrink: 0; /* Предотвращаем сжатие radio-кнопки */
 }
 
 th {
@@ -257,5 +300,21 @@ td a:hover {
 
     th:first-child, td:first-child {
         position: static; /* Отключаем sticky для мобильных */
+    }
+
+    .attendance-radio {
+        gap: 4px; /* Меньший отступ для мобильных */
+        font-size: 10px; /* Ещё меньший шрифт */
+    }
+
+    /* Отключаем фиксированную ширину столбцов на мобильных */
+    th:nth-child(1), td:nth-child(1),
+    th:nth-child(2), td:nth-child(2),
+    th:nth-child(3), td:nth-child(3),
+    th:nth-child(4), td:nth-child(4),
+    th:nth-child(5), td:nth-child(5) {
+        width: auto;
+        max-width: none; /* Убираем ограничение ширины */
+        overflow: visible; /* Позволяем тексту отображаться полностью */
     }
 }

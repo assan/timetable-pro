@@ -1,30 +1,61 @@
 {% extends 'base.html' %}
-{% block title %}Расписание уроков{% endblock %}
+{% block title %}
+Расписание
+{% endblock %}
 {% block content %}
-<h2>Расписание уроков</h2>
-{% for day, lessons in schedule.items %}
-    <h3>{{ lessons.0.get_day_of_week_display }}</h3>
-    <table>
-        <tr>
-            <th>Время</th>
-            <th>Курсант</th>
-            <th>Инструктор</th>
-            <th>Предмет</th>
-            <th>Тип урока</th>
-        </tr>
-        {% for lesson in lessons %}
-        <tr>
-            <td>{{ lesson.time_slot }}</td>
-            <td>{{ lesson.student.name }}</td>
-            <td>{{ lesson.teacher.name }}</td>
-            <td>{{ lesson.subject.name }}</td>
-            <td>{{ lesson.get_lesson_type_display }}</td>
-        </tr>
-        {% empty %}
-        <tr>
-            <td colspan="5">Нет уроков</td>
-        </tr>
-        {% endfor %}
-    </table>
-{% endfor %}
+    <h1>Ваше расписание</h1>
+    {% for day, lessons in schedule.items %}
+        <h2>{{ lessons.0.get_day_of_week_display }}</h2>
+        <form method="post" action="{% url 'scheduling:confirm_lessons' %}">
+            {% csrf_token %}
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Студент</th>
+                            <th>Предмет</th>
+                            <th>Учитель</th>
+                            <th>Время</th>
+                            <th>Подтверждено</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for lesson in lessons %}
+                            <tr>
+                                <td data-label="Студент">{{ lesson.student.name }}</td>
+                                <td data-label="Предмет">{{ lesson.subject.name }}</td>
+                                <td data-label="Учитель">{{ lesson.teacher.name }}</td>
+                                <td data-label="Время">{{ lesson.time_slot.start_time }} - {{ lesson.time_slot.end_time }}</td>
+                                <td class="attendance-radio" data-label="Подтверждено">
+                                    <label>
+                                        <input type="checkbox"
+                                               name="confirm_{{ lesson.id }}"
+                                               value="true"
+                                               {% if lesson.is_confirmed %}checked{% endif %}>
+                                        {{ lesson.is_confirmed|yesno:"Да,Нет" }}
+                                    </label>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="5">Нет занятий</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if lessons %}
+                <button type="submit" name="confirm">Сохранить подтверждение</button>
+            {% endif %}
+        </form>
+        {% if lessons %}
+            <div class="hours-info">
+                {% for lesson in lessons %}
+                    <p>{{ lesson.student.name }}:
+                       Автодром - {{ lesson.student.autodrom_hours }} ч.,
+                       Город - {{ lesson.student.city_hours }} ч.</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endfor %}
 {% endblock %}

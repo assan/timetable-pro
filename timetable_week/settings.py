@@ -65,6 +65,9 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
+        'libraries': {
+                'custom_filters': 'autorization.templatetags.custom_filters',  # Укажите правильный путь
+            },
         },
     },
 ]

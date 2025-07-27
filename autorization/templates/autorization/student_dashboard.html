@@ -1,64 +1,121 @@
 {% extends 'base.html' %}
+{% load custom_filters %}
 {% block title %}Личный кабинет курсанта{% endblock %}
 {% block content %}
-<h2>Личный кабинет курсанта: {{ student.name }}</h2>
+    <div class="container">
+        <h2>Личный кабинет курсанта: {{ student.name }}</h2>
 
-{% if messages %}
-    <ul class="messages">
-        {% for message in messages %}
-            <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
-        {% endfor %}
-    </ul>
-{% endif %}
+        <!-- Сообщения -->
+        {% if messages %}
+            <ul class="messages">
+                {% for message in messages %}
+                    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
 
-{% if form.errors %}
-    <ul class="errorlist">
-        {% for field in form %}
-            {% for error in field.errors %}
-                <li>{{ field.label }}: {{ error }}</li>
-            {% endfor %}
-        {% endfor %}
-        {% for error in form.non_field_errors %}
-            <li>{{ error }}</li>
-        {% endfor %}
-    </ul>
-{% endif %}
+        <!-- Ошибки формы -->
+        {% if form.errors %}
+            <ul class="errorlist">
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <li>{{ field.label }}: {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
 
-<form method="post">
-    {% csrf_token %}
-    <div>
-        <label for="{{ form.name.id_for_label }}">Имя:</label>
-        {{ form.name }}
+        <!-- Форма редактирования профиля -->
+        <form method="post">
+            {% csrf_token %}
+            <div>
+                <label for="{{ form.name.id_for_label }}">Имя:</label>
+                {{ form.name }}
+            </div>
+            <div>
+                <label for="{{ form.monday_free_time.id_for_label }}">Свободное время (Понедельник):</label>
+                {{ form.monday_free_time }}
+            </div>
+            <div>
+                <label for="{{ form.tuesday_free_time.id_for_label }}">Свободное время (Вторник):</label>
+                {{ form.tuesday_free_time }}
+            </div>
+            <div>
+                <label for="{{ form.wednesday_free_time.id_for_label }}">Свободное время (Среда):</label>
+                {{ form.wednesday_free_time }}
+            </div>
+            <div>
+                <label for="{{ form.thursday_free_time.id_for_label }}">Свободное время (Четверг):</label>
+                {{ form.thursday_free_time }}
+            </div>
+            <div>
+                <label for="{{ form.friday_free_time.id_for_label }}">Свободное время (Пятница):</label>
+                {{ form.friday_free_time }}
+            </div>
+            <div>
+                <label for="{{ form.saturday_free_time.id_for_label }}">Свободное время (Суббота):</label>
+                {{ form.saturday_free_time }}
+            </div>
+            <div>
+                <label for="{{ form.sunday_free_time.id_for_label }}">Свободное время (Воскресенье):</label>
+                {{ form.sunday_free_time }}
+            </div>
+            <button type="submit">Сохранить</button>
+        </form>
+
+        <!-- Таблица занятий для подтверждения -->
+        <h2>Ваши занятия</h2>
+        {% if lessons %}
+            <form method="post" action="{% url 'autorization:student_dashboard' %}">
+                {% csrf_token %}
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Дата</th>
+                                <th>Время</th>
+                                <th>Учитель</th>
+                                <th>Подтверждено</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for lesson in lessons %}
+                                {% with current_date=now|date:"Y-m-d"|add_days:lesson.day_of_week %}
+                                <tr>
+                                    <td data-label="Дата">{{ current_date|date:"d.m.Y" }}</td>
+                                    <td data-label="Время">{{ lesson.time_slot.start_time }} - {{ lesson.time_slot.end_time }}</td>
+                                    <td data-label="Учитель">{{ lesson.teacher.name }}</td>
+                                    <td class="attendance-radio" data-label="Подтверждено">
+                                        <label>
+                                            <input type="checkbox"
+                                                   name="confirm_{{ lesson.id }}"
+                                                   value="true"
+                                                   {% if lesson.is_confirmed %}checked{% endif %}>
+                                            {{ lesson.is_confirmed|yesno:"Да,Нет" }}
+                                        </label>
+                                    </td>
+                                </tr>
+                                {% endwith %}
+                            {% empty %}
+                                <tr>
+                                    <td colspan="4">Нет доступных занятий.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if lessons %}
+                    <button type="submit" name="confirm">Сохранить подтверждение</button>
+                {% endif %}
+            </form>
+        {% else %}
+            <p>У вас нет назначенных занятий.</p>
+        {% endif %}
+
+        <!-- Выход -->
+        <p><a href="{% url 'autorization:logout' %}">Выйти</a></p>
     </div>
-    <div>
-        <label for="{{ form.monday_free_time.id_for_label }}">Свободное время (Понедельник):</label>
-        {{ form.monday_free_time }}
-    </div>
-    <div>
-        <label for="{{ form.tuesday_free_time.id_for_label }}">Свободное время (Вторник):</label>
-        {{ form.tuesday_free_time }}
-    </div>
-    <div>
-        <label for="{{ form.wednesday_free_time.id_for_label }}">Свободное время (Среда):</label>
-        {{ form.wednesday_free_time }}
-    </div>
-    <div>
-        <label for="{{ form.thursday_free_time.id_for_label }}">Свободное время (Четверг):</label>
-        {{ form.thursday_free_time }}
-    </div>
-    <div>
-        <label for="{{ form.friday_free_time.id_for_label }}">Свободное время (Пятница):</label>
-        {{ form.friday_free_time }}
-    </div>
-    <div>
-        <label for="{{ form.saturday_free_time.id_for_label }}">Свободное время (Суббота):</label>
-        {{ form.saturday_free_time }}
-    </div>
-    <div>
-        <label for="{{ form.sunday_free_time.id_for_label }}">Свободное время (Воскресенье):</label>
-        {{ form.sunday_free_time }}
-    </div>
-    <button type="submit">Сохранить</button>
-</form>
-<p><a href="{% url 'autorization:logout' %}">Выйти</a></p>
 {% endblock %}
