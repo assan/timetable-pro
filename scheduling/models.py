@@ -92,10 +92,10 @@ class Lesson(models.Model):
         ('', 'Не выбрано'),
     )
     STATUS_CHOICES = (
-        (0, 'scheduled'),  # Запланировано
-        (1, 'confirmed'),  # Подтверждено
-        (2, 'attended'),   # Посещено
-        (3, 'cancelled'),  # Отменено
+        (0, 'Запланировано'),  # Запланировано
+        (1, 'Подтверждено'),  # Подтверждено
+        (2, 'Посещено'),   # Посещено
+        (3, 'Отменено'),  # Отменено
     )
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)

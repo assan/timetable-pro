@@ -11,26 +11,37 @@
 <body>
 <div class="container">
     <nav>
-        <a href="{% url 'scheduling:schedule' %}">На главную</a>
-        <a href="{% url 'scheduling:calculate_schedule' %}">Рассчитать расписание</a>
-        <a href="{% url 'scheduling:mark_attendance' %}">Отметить посещения</a>
-        <a href="{% url 'scheduling:students' %}">Курсанты</a>
-        <a href="{% url 'scheduling:teachers' %}">Инструкторы</a>
-        <a href="{% url 'scheduling:subjects' %}">Виды трансмиссий</a>
-        <a href="{% url 'scheduling:time_slots' %}">Время для занятий</a>
         {% if user.is_authenticated %}
             {% if user.userprofile.role == 'student' %}
                 <a href="{% url 'autorization:student_dashboard' %}">Личный кабинет</a>
+                <a href="{% url 'autorization:logout' %}">Выйти</a>
             {% elif user.userprofile.role == 'teacher' %}
                 <a href="{% url 'autorization:teacher_dashboard' %}">Личный кабинет</a>
+                <a href="{% url 'autorization:logout' %}">Выйти</a>
             {% elif user.userprofile.role == 'admin' %}
+                <a href="{% url 'scheduling:schedule' %}">На главную</a>
+                <a href="{% url 'scheduling:calculate_schedule' %}">Рассчитать расписание</a>
+                <a href="{% url 'scheduling:mark_attendance' %}">Отметить посещения</a>
+                <a href="{% url 'scheduling:students' %}">Курсанты</a>
+                <a href="{% url 'scheduling:teachers' %}">Инструкторы</a>
+                <a href="{% url 'scheduling:subjects' %}">Виды трансмиссий</a>
+                <a href="{% url 'scheduling:time_slots' %}">Время для занятий</a>
                 <a href="{% url 'autorization:admin_dashboard' %}">Панель администратора</a>
+                <a href="{% url 'autorization:logout' %}">Выйти</a>
             {% endif %}
-            <a href="{% url 'autorization:logout' %}">Выйти</a>
         {% else %}
             <a href="{% url 'autorization:login' %}">Войти</a>
         {% endif %}
     </nav>
+
+    {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+                <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
     {% block content %}{% endblock %}
 </div>
 </body>
