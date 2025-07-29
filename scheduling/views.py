@@ -10,9 +10,8 @@ from .models import Student, Teacher, Subject, TimeSlot, Lesson
 from .forms import StudentForm, TeacherForm, SubjectForm, TimeSlotForm
 from .optimization import calculate_schedule
 from django.contrib import messages
-from datetime import timezone
 from autorization.views import is_admin  # Импортируем проверку роли
-
+from django.utils import timezone
 # Декораторы для защиты представлений
 decorators = [login_required, user_passes_test(is_admin)]
 
@@ -262,6 +261,7 @@ class CalculateScheduleView(View):
         return render(request, 'scheduling/error.html', {'message': 'Unable to calculate schedule.'})
 
 # Просмотр расписания
+@method_decorator(decorators, name='dispatch')
 class ScheduleView(ListView):
     model = Lesson
     template_name = 'scheduling/schedule.html'
@@ -288,6 +288,7 @@ def get_teachers(request):
 
 # Отметка посещаемости
 @login_required
+@user_passes_test(is_admin)
 def mark_attendance(request):
     if request.method == 'POST':
         if 'confirm' in request.POST:
@@ -320,22 +321,38 @@ def mark_attendance(request):
 @login_required
 def confirm_lessons(request):
     if request.method == 'POST':
+        # Определяем пользователя и его роль
+        student = request.user.student if hasattr(request.user, 'student') else None
+        is_admin_user = is_admin(request.user)
+
         for key, value in request.POST.items():
             if key.startswith('confirm_'):
                 lesson_id = key.replace('confirm_', '')
                 try:
-                    lesson = Lesson.objects.get(id=lesson_id)
+                    # Фильтруем урок по student только для курсантов
+                    if student and not is_admin_user:
+                        lesson = Lesson.objects.get(id=lesson_id, student=student)
+                    else:
+                        lesson = Lesson.objects.get(id=lesson_id)  # Для админа все уроки
+
                     if lesson.status == 0 and int(value) == 1:  # Только из scheduled в confirmed
                         lesson.status = 1
                         lesson.save()
                         print(f"Confirmed lesson {lesson_id}")
                         messages.success(request, f'Занятие {lesson_id} подтверждено.')
+                    else:
+                        messages.error(request, f'Невозможно подтвердить занятие {lesson_id} (не в статусе scheduled).')
                 except Lesson.DoesNotExist:
-                    messages.error(request, f'Занятие {lesson_id} не найдено.')
+                    messages.error(request, f'Занятие {lesson_id} не найдено или недоступно.')
             elif key.startswith('cancel_'):
                 lesson_id = key.replace('cancel_', '')
                 try:
-                    lesson = Lesson.objects.get(id=lesson_id)
+                    # Фильтруем урок по student только для курсантов
+                    if student and not is_admin_user:
+                        lesson = Lesson.objects.get(id=lesson_id, student=student)
+                    else:
+                        lesson = Lesson.objects.get(id=lesson_id)  # Для админа все уроки
+
                     if lesson.status == 1 and timezone.now() < lesson.lesson_time - timezone.timedelta(hours=24):
                         lesson.status = 3
                         lesson.save()
@@ -343,15 +360,16 @@ def confirm_lessons(request):
                     else:
                         messages.error(request, f'Отмена занятия {lesson_id} невозможна (менее 24 часов или не в статусе confirmed).')
                 except Lesson.DoesNotExist:
-                    messages.error(request, f'Занятие {lesson_id} не найдено.')
-            elif key == 'save':  # Обработка кнопки "Сохранить изменения"
-                pass  # Можно добавить дополнительную логику, если нужно
+                    messages.error(request, f'Занятие {lesson_id} не найдено или недоступно.')
+            elif key == 'save':
+                pass  # Логика для "Сохранить изменения", если нужна
 
-        # Рендерим страницу в зависимости от контекста
-        if hasattr(request.user, 'student'):
-            student = request.user.student
+        # Рендеринг зависит от роли
+        if student and not is_admin_user:
+            form = StudentProfileForm(instance=student)
             lessons = Lesson.objects.filter(student=student).order_by('lesson_time')
             return render(request, 'autorization/student_dashboard.html', {
+                'form': form,
                 'student': student,
                 'lessons': lessons,
                 'now': timezone.now()
@@ -368,7 +386,7 @@ def confirm_lessons(request):
                 'timezone': timezone,
                 'messages': messages.get_messages(request)
             })
-    return redirect('scheduling:schedule')  # Для GET-запросов
+    return redirect('autorization:student_dashboard' if hasattr(request.user, 'student') else 'scheduling:schedule')
 def get_schedule_for_student(student):
     # Логика получения расписания для конкретного студента, например:
     from django.utils import timezone

@@ -142,14 +142,14 @@ def calculate_schedule():
         for a in availabilities:
             if a.available and x.get((a.student.id, a.teacher.id, a.subject.id, a.day_of_week, a.time_slot.id), 0).value() == 1:
                 # Вычисляем lesson_time для следующей недели
-                days_to_add = (a.day_of_week - current_weekday + 7) % 7
-                if days_to_add == 0 and current_weekday == a.day_of_week:
-                    days_to_add = 7  # Переходим на следующую неделю
+                current_weekday = today.weekday()  # 0 = понедельник, 1 = вторник и т.д.
+                days_to_add = (a.day_of_week - current_weekday + 7)
                 lesson_date = today + timedelta(days=days_to_add)
                 # Извлекаем start_time из time_slot.start_time (например, "08:00" из "08:00-08:45")
                 start_time_str = a.time_slot.start_time.split('-')[0]  # Берем только начальное время
                 hour, minute = map(int, start_time_str.split(':'))
-                lesson_time = timezone.make_aware(datetime.combine(lesson_date, datetime.min.time()).replace(hour=hour, minute=minute))
+                lesson_time = timezone.make_aware(
+                    datetime.combine(lesson_date, datetime.min.time()).replace(hour=hour, minute=minute))
                 # Создаём занятие
                 Lesson.objects.create(
                     student=a.student,

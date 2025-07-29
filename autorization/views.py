@@ -75,13 +75,13 @@ class StudentDashboardView(View):
             messages.success(request, 'Профиль курсанта успешно обновлён!')
             return redirect('autorization:student_dashboard')
         lessons = Lesson.objects.filter(student=student).order_by('lesson_time')
-        return render(request, self.template_name, {
+        return (render(request, self.template_name, {
             'form': form,
             'student': student,
             'lessons': lessons,
             'now': timezone.now()
         })
-@method_decorator([login_required, user_passes_test(is_teacher)], name='dispatch')
+@method_decorator([login_required, user_passes_test(is_teacher)], name='dispatch'))
 class TeacherDashboardView(View):
     template_name = 'autorization/teacher_dashboard.html'
 
