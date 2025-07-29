@@ -1,13 +1,11 @@
 {% extends 'base.html' %}
 {% load custom_filters %}
-{% block title %}
-Расписание
-{% endblock %}
+{% block title %}Расписание{% endblock %}
 {% block content %}
     <h1>Расписание вождения</h1>
     {% for day, lessons in schedule.items %}
         <h2>{{ lessons.0.get_day_of_week_display }}</h2>
-        <form method="post" action="{% url 'scheduling:confirm_lessons' %}">
+        <form method="post" action="{% url 'scheduling:confirm_lessons' %}" id="lesson-form-{{ day }}">
             {% csrf_token %}
             <div class="table-wrapper">
                 <table>
@@ -23,19 +21,19 @@
                     </thead>
                     <tbody>
                         {% for lesson in lessons %}
-                            <tr>
+                            <tr id="lesson-row-{{ lesson.id }}">
                                 <td data-label="Студент">{{ lesson.student.name }}</td>
                                 <td data-label="Предмет">{{ lesson.subject.name }}</td>
                                 <td data-label="Учитель">{{ lesson.teacher.name }}</td>
                                 <td data-label="Время">{{ lesson.time_slot.start_time }} - {{ lesson.time_slot.end_time }}</td>
                                 <td data-label="Статус">{{ lesson.get_status_display }}</td>
                                 <td data-label="Действия">
-                                    {% if lesson.status == 0 %}  <!-- scheduled -->
-                                        <button type="submit" name="confirm_{{ lesson.id }}" value="1">Подтвердить</button>
-                                    {% elif lesson.status == 1 %}  <!-- confirmed -->
+                                    {% if lesson.status == 0 %}
+                                        <button type="submit" name="confirm_{{ lesson.id }}" value="1" class="lesson-action">Подтвердить</button>
+                                    {% elif lesson.status == 1 %}
                                         {% with now=timezone.now %}
                                             {% if lesson.lesson_time|is_more_than_24_hours:now %}
-                                                <button type="submit" name="cancel_{{ lesson.id }}" value="3">Отменить</button>
+                                                <button type="submit" name="cancel_{{ lesson.id }}" value="3" class="lesson-action">Отменить</button>
                                             {% else %}
                                                 Действия невозможны (менее 24 ч)
                                             {% endif %}
@@ -65,4 +63,39 @@
             </div>
         {% endif %}
     {% endfor %}
+
+    <!-- JavaScript для сохранения и восстановления позиции прокрутки -->
+    <script>
+        document.querySelectorAll('.lesson-action').forEach(button => {
+            button.addEventListener('click', function(e) {
+                // Сохраняем позицию прокрутки перед отправкой формы
+                const scrollPosition = window.scrollY || window.pageYOffset;
+                // Сохраняем ID строки урока для восстановления
+                const lessonId = this.name.replace(/confirm_|cancel_/, '');
+                // Добавляем скрытое поле с позицией
+                const form = this.closest('form');
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'scroll_position';
+                input.value = scrollPosition;
+                input.dataset.lessonId = lessonId;
+                form.appendChild(input);
+            });
+        });
+
+        // Восстанавливаем позицию после перезагрузки
+        window.addEventListener('load', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const scrollPosition = urlParams.get('scroll_position');
+            const lessonId = urlParams.get('lesson_id');
+            if (scrollPosition && lessonId) {
+                // Прокручиваем к строке урока
+                const lessonRow = document.getElementById(`lesson-row-${lessonId}`);
+                if (lessonRow) {
+                    lessonRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    window.scrollBy(0, -50); // Смещение вверх для удобства
+                }
+            }
+        });
+    </script>
 {% endblock %}

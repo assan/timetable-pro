@@ -3,15 +3,17 @@ from django.utils.decorators import method_decorator
 from django.views.generic import ListView, UpdateView, DeleteView
 from django.views.generic.edit import FormMixin
 from django.views.generic.base import View
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from django.shortcuts import render, redirect
-from django.http import HttpResponseNotFound, JsonResponse
+from django.http import HttpResponseNotFound, JsonResponse, HttpResponseRedirect
 from .models import Student, Teacher, Subject, TimeSlot, Lesson
 from .forms import StudentForm, TeacherForm, SubjectForm, TimeSlotForm
 from .optimization import calculate_schedule
 from django.contrib import messages
 from autorization.views import is_admin  # Импортируем проверку роли
+from autorization.forms import StudentProfileForm
 from django.utils import timezone
+
 # Декораторы для защиты представлений
 decorators = [login_required, user_passes_test(is_admin)]
 
@@ -321,21 +323,24 @@ def mark_attendance(request):
 @login_required
 def confirm_lessons(request):
     if request.method == 'POST':
-        # Определяем пользователя и его роль
         student = request.user.student if hasattr(request.user, 'student') else None
         is_admin_user = is_admin(request.user)
+
+        scroll_position = request.POST.get('scroll_position')
+        lesson_id = None
+        for key in request.POST:
+            if key.startswith('confirm_') or key.startswith('cancel_'):
+                lesson_id = key.replace('confirm_', '').replace('cancel_', '')
 
         for key, value in request.POST.items():
             if key.startswith('confirm_'):
                 lesson_id = key.replace('confirm_', '')
                 try:
-                    # Фильтруем урок по student только для курсантов
                     if student and not is_admin_user:
                         lesson = Lesson.objects.get(id=lesson_id, student=student)
                     else:
-                        lesson = Lesson.objects.get(id=lesson_id)  # Для админа все уроки
-
-                    if lesson.status == 0 and int(value) == 1:  # Только из scheduled в confirmed
+                        lesson = Lesson.objects.get(id=lesson_id)
+                    if lesson.status == 0 and int(value) == 1:
                         lesson.status = 1
                         lesson.save()
                         print(f"Confirmed lesson {lesson_id}")
@@ -347,13 +352,14 @@ def confirm_lessons(request):
             elif key.startswith('cancel_'):
                 lesson_id = key.replace('cancel_', '')
                 try:
-                    # Фильтруем урок по student только для курсантов
                     if student and not is_admin_user:
                         lesson = Lesson.objects.get(id=lesson_id, student=student)
                     else:
-                        lesson = Lesson.objects.get(id=lesson_id)  # Для админа все уроки
-
-                    if lesson.status == 1 and timezone.now() < lesson.lesson_time - timezone.timedelta(hours=24):
+                        lesson = Lesson.objects.get(id=lesson_id)
+                    current_time = timezone.now()
+                    time_threshold = lesson.lesson_time - timezone.timedelta(hours=24)
+                    print(f"Debug: lesson_id={lesson_id}, lesson_time={lesson.lesson_time}, now={current_time}, threshold={time_threshold}")
+                    if lesson.status == 1 and current_time < time_threshold:
                         lesson.status = 3
                         lesson.save()
                         messages.success(request, f'Занятие {lesson_id} отменено.')
@@ -362,9 +368,8 @@ def confirm_lessons(request):
                 except Lesson.DoesNotExist:
                     messages.error(request, f'Занятие {lesson_id} не найдено или недоступно.')
             elif key == 'save':
-                pass  # Логика для "Сохранить изменения", если нужна
+                pass
 
-        # Рендеринг зависит от роли
         if student and not is_admin_user:
             form = StudentProfileForm(instance=student)
             lessons = Lesson.objects.filter(student=student).order_by('lesson_time')
@@ -381,6 +386,8 @@ def confirm_lessons(request):
                 schedule[lesson.day_of_week].append(lesson)
             for day in schedule:
                 schedule[day].sort(key=lambda x: x.time_slot.start_time)
+            if scroll_position and lesson_id:
+                return HttpResponseRedirect(f"{reverse('scheduling:schedule')}?scroll_position={scroll_position}&lesson_id={lesson_id}")
             return render(request, 'scheduling/schedule.html', {
                 'schedule': schedule,
                 'timezone': timezone,
