@@ -1,10 +1,18 @@
 from django import template
 from django.utils import timezone
-import datetime
 
 register = template.Library()
 
 @register.filter
-def add_days(date_str, days):
-    date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
-    return date + datetime.timedelta(days=int(days))
+def is_more_than_24_hours(lesson_time, now):
+    if not lesson_time or not now:
+        return False
+    # Преобразуем now в datetime, если это строка или иное представление
+    if isinstance(now, str):
+        try:
+            now = timezone.datetime.strptime(now, '%Y-%m-%d %H:%M:%S%z').replace(tzinfo=timezone.get_current_timezone())
+        except (ValueError, TypeError):
+            now = timezone.now()  # Фallback на текущее время с таймзоной
+    time_threshold = lesson_time - timezone.timedelta(hours=24)
+    print(f"Checking: lesson_time={lesson_time}, now={now}, threshold={time_threshold}")
+    return now < time_threshold

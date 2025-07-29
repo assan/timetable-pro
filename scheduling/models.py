@@ -91,13 +91,23 @@ class Lesson(models.Model):
         ('city', 'Город'),
         ('', 'Не выбрано'),
     )
+    STATUS_CHOICES = (
+        (0, 'scheduled'),  # Запланировано
+        (1, 'confirmed'),  # Подтверждено
+        (2, 'attended'),   # Посещено
+        (3, 'cancelled'),  # Отменено
+    )
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
     day_of_week = models.IntegerField(choices=DAYS_OF_WEEK)
     time_slot = models.ForeignKey(TimeSlot, on_delete=models.CASCADE)
-    is_attended = models.BooleanField(default=False)
     lesson_type = models.CharField(max_length=10, choices=LESSON_TYPES, default='', blank=True)
-    is_confirmed = models.BooleanField(default=False)
+    status = models.IntegerField(choices=STATUS_CHOICES, default=0)
+    lesson_time = models.DateTimeField(null=True, blank=True)  # Новое поле для точного времени
+
     def __str__(self):
-        return f"{self.student} - {self.subject} - {self.teacher} - {self.get_day_of_week_display()} - {self.time_slot} - {self.get_lesson_type_display()}"
+        return f"{self.student} - {self.subject} - {self.teacher} - {self.lesson_time} - {self.get_status_display()}"
+
+    def get_status_display(self):
+        return dict(self.STATUS_CHOICES).get(self.status, 'unknown')

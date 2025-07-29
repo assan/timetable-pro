@@ -1,6 +1,7 @@
 from scheduling.models import *
-from datetime import time
+from datetime import time, datetime, timedelta
 from pulp import *
+from django.utils import timezone
 
 def parse_start_end(time):
     time = time.split('-')
@@ -15,7 +16,7 @@ def time_to_int(time):
 def is_overlapping(time_slot1, time_slot2):
     st1, et1 = time_slot1.start_minutes, time_slot1.end_minutes
     st2, et2 = time_slot2.start_minutes, time_slot2.end_minutes
-    return st2 < et1 and st1 < et2
+    return max(st1,st2)<min(et1,et2)
 
 def init_time_slots():
     TimeSlot.objects.all().delete()
@@ -133,16 +134,30 @@ def calculate_schedule():
     model += lpSum(x.values())
     # Решение модели
     status = model.solve()
-    # Выгрузка рассчитанного расписания в модель Lessons
+    # Выгрузка рассчитанного расписания в модель Lessons с lesson_time
     if status:
         Lesson.objects.all().delete()
+        today = timezone.now().date()
+        current_weekday = today.weekday()  # 0 = понедельник, 6 = воскресенье
         for a in availabilities:
             if a.available and x.get((a.student.id, a.teacher.id, a.subject.id, a.day_of_week, a.time_slot.id), 0).value() == 1:
+                # Вычисляем lesson_time для следующей недели
+                days_to_add = (a.day_of_week - current_weekday + 7) % 7
+                if days_to_add == 0 and current_weekday == a.day_of_week:
+                    days_to_add = 7  # Переходим на следующую неделю
+                lesson_date = today + timedelta(days=days_to_add)
+                # Извлекаем start_time из time_slot.start_time (например, "08:00" из "08:00-08:45")
+                start_time_str = a.time_slot.start_time.split('-')[0]  # Берем только начальное время
+                hour, minute = map(int, start_time_str.split(':'))
+                lesson_time = timezone.make_aware(datetime.combine(lesson_date, datetime.min.time()).replace(hour=hour, minute=minute))
+                # Создаём занятие
                 Lesson.objects.create(
                     student=a.student,
                     teacher=a.teacher,
                     subject=a.subject,
                     day_of_week=a.day_of_week,
-                    time_slot=a.time_slot
+                    time_slot=a.time_slot,
+                    lesson_time=lesson_time,
+                    status=0  # scheduled по умолчанию
                 )
     return status

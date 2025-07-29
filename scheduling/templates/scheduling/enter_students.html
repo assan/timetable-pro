@@ -5,12 +5,8 @@
 {% endblock %}
 {% block content %}
 <div class="container">
-    <h2>Введите данные курсанта</h2>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Отправить</button>
-    </form>
+
+
     <h1>Свободное время курсантов</h1>
 </div>
 <div class="table-wrapper">
@@ -52,6 +48,12 @@
         </tr>
         {% endfor %}
     </table>
+        <h2>Редактррование данных курсанта</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Отправить</button>
+    </form>
 </div>
 
 <script type="text/javascript">

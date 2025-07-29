@@ -10,7 +10,7 @@ from .models import Student, Teacher, Subject, TimeSlot, Lesson
 from .forms import StudentForm, TeacherForm, SubjectForm, TimeSlotForm
 from .optimization import calculate_schedule
 from django.contrib import messages
-from datetime import date
+from datetime import timezone
 from autorization.views import is_admin  # Импортируем проверку роли
 
 # Декораторы для защиты представлений
@@ -256,7 +256,9 @@ class CalculateScheduleView(View):
     def post(self, request, *args, **kwargs):
         status = calculate_schedule()
         if status:
+            messages.success(request, 'Расписание успешно рассчитано!')
             return redirect('scheduling:schedule')
+        messages.error(request, 'Не удалось рассчитать расписание.')
         return render(request, 'scheduling/error.html', {'message': 'Unable to calculate schedule.'})
 
 # Просмотр расписания
@@ -266,7 +268,7 @@ class ScheduleView(ListView):
     context_object_name = 'schedule'
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data()
+        context = super().get_context_data(**kwargs)
         lessons = Lesson.objects.select_related('student', 'teacher', 'subject', 'time_slot').all()
         schedule = {i: [] for i in range(7)}
         for lesson in lessons:
@@ -274,8 +276,8 @@ class ScheduleView(ListView):
         for day in schedule:
             schedule[day].sort(key=lambda x: x.time_slot.start_time)
         context['schedule'] = schedule
+        context['timezone'] = timezone  # Убедитесь, что timezone доступен
         return context
-
 # Получение списка учителей для предмета
 @login_required
 @user_passes_test(is_admin)
@@ -318,18 +320,55 @@ def mark_attendance(request):
 @login_required
 def confirm_lessons(request):
     if request.method == 'POST':
-        for lesson_id, value in request.POST.items():
-            if lesson_id.startswith('confirm_'):
-                lesson_id = lesson_id.replace('confirm_', '')
+        for key, value in request.POST.items():
+            if key.startswith('confirm_'):
+                lesson_id = key.replace('confirm_', '')
                 try:
                     lesson = Lesson.objects.get(id=lesson_id)
-                    lesson.is_confirmed = ('true' in value)
-                    lesson.save()
+                    if lesson.status == 0 and int(value) == 1:  # Только из scheduled в confirmed
+                        lesson.status = 1
+                        lesson.save()
+                        print(f"Confirmed lesson {lesson_id}")
+                        messages.success(request, f'Занятие {lesson_id} подтверждено.')
                 except Lesson.DoesNotExist:
-                    pass
-        return redirect('scheduling:schedule')
-    return render(request, 'schedule.html', {'schedule': get_schedule_for_student(request.user.student)})  # Функция get_schedule_for_student должна быть реализована
+                    messages.error(request, f'Занятие {lesson_id} не найдено.')
+            elif key.startswith('cancel_'):
+                lesson_id = key.replace('cancel_', '')
+                try:
+                    lesson = Lesson.objects.get(id=lesson_id)
+                    if lesson.status == 1 and timezone.now() < lesson.lesson_time - timezone.timedelta(hours=24):
+                        lesson.status = 3
+                        lesson.save()
+                        messages.success(request, f'Занятие {lesson_id} отменено.')
+                    else:
+                        messages.error(request, f'Отмена занятия {lesson_id} невозможна (менее 24 часов или не в статусе confirmed).')
+                except Lesson.DoesNotExist:
+                    messages.error(request, f'Занятие {lesson_id} не найдено.')
+            elif key == 'save':  # Обработка кнопки "Сохранить изменения"
+                pass  # Можно добавить дополнительную логику, если нужно
 
+        # Рендерим страницу в зависимости от контекста
+        if hasattr(request.user, 'student'):
+            student = request.user.student
+            lessons = Lesson.objects.filter(student=student).order_by('lesson_time')
+            return render(request, 'autorization/student_dashboard.html', {
+                'student': student,
+                'lessons': lessons,
+                'now': timezone.now()
+            })
+        else:
+            lessons = Lesson.objects.select_related('student', 'teacher', 'subject', 'time_slot').all()
+            schedule = {i: [] for i in range(7)}
+            for lesson in lessons:
+                schedule[lesson.day_of_week].append(lesson)
+            for day in schedule:
+                schedule[day].sort(key=lambda x: x.time_slot.start_time)
+            return render(request, 'scheduling/schedule.html', {
+                'schedule': schedule,
+                'timezone': timezone,
+                'messages': messages.get_messages(request)
+            })
+    return redirect('scheduling:schedule')  # Для GET-запросов
 def get_schedule_for_student(student):
     # Логика получения расписания для конкретного студента, например:
     from django.utils import timezone
