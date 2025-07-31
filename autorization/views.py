@@ -52,47 +52,127 @@ def logout_view(request):
     logout(request)
     return redirect('autorization:login')
 
+
+# Главная страница курсната с навигацией
 @method_decorator([login_required, user_passes_test(is_student)], name='dispatch')
 class StudentDashboardView(View):
     template_name = 'autorization/student_dashboard.html'
 
     def get(self, request):
         student = Student.objects.get(user=request.user)
+        return render(request, self.template_name, {'student': student})
+
+
+# Управление профилем (свободное время)
+@method_decorator([login_required, user_passes_test(is_student)], name='dispatch')
+class StudentProfileView(View):
+    template_name = 'autorization/student_profile.html'
+
+    def get(self, request):
+        student = Student.objects.get(user=request.user)
         form = StudentProfileForm(instance=student)
-        lessons = Lesson.objects.filter(student=student).order_by('lesson_time')
-        return render(request, self.template_name, {
-            'form': form,
-            'student': student,
-            'lessons': lessons,
-            'now': timezone.now()  # Гарантируем передачу now
-        })
+        return render(request, self.template_name, {'form': form, 'student': student})
 
     def post(self, request):
         student = Student.objects.get(user=request.user)
         form = StudentProfileForm(request.POST, instance=student)
+
         if form.is_valid():
             form.save()
             messages.success(request, 'Профиль курсанта успешно обновлён!')
-            return redirect('autorization:student_dashboard')
+            return redirect('autorization:student_profile')
+
+        return render(request, self.template_name, {'form': form, 'student': student})
+
+
+# Просмотр расписания и управление занятиями
+@method_decorator([login_required, user_passes_test(is_student)], name='dispatch')
+class StudentScheduleView(View):
+    template_name = 'autorization/student_schedule.html'
+
+    def get(self, request):
+        student = Student.objects.get(user=request.user)
         lessons = Lesson.objects.filter(student=student).order_by('lesson_time')
         return render(request, self.template_name, {
-            'form': form,
             'student': student,
             'lessons': lessons,
-            'now': timezone.now()  # Передаём now и при POST
+            'now': timezone.now()
         })
 
+    def post(self, request):
+        student = Student.objects.get(user=request.user)
+        lessons = Lesson.objects.filter(student=student).order_by('lesson_time')
 
+        for key, value in request.POST.items():
+            if key.startswith('confirm_') and value == '1':
+                lesson_id = key.replace('confirm_', '')
+                try:
+                    lesson = Lesson.objects.get(id=lesson_id, student=student, status=0)
+                    lesson.status = 1
+                    lesson.save()
+                    messages.success(request, f'Занятие с ID {lesson_id} подтверждено.')
+                except Lesson.DoesNotExist:
+                    messages.error(request, f'Ошибка: Занятие {lesson_id} не найдено или не может быть подтверждено.')
+            elif key.startswith('cancel_') and value == '3':
+                lesson_id = key.replace('cancel_', '')
+                try:
+                    lesson = Lesson.objects.get(id=lesson_id, student=student, status=1)
+                    if not lesson.lesson_time or (lesson.lesson_time - timezone.now()).total_seconds() / 3600 > 24:
+                        lesson.status = 3
+                        lesson.save()
+                        messages.success(request, f'Занятие с ID {lesson_id} отменено.')
+                    else:
+                        messages.error(request, f'Ошибка: Отмена невозможна (менее 24 часов до {lesson.lesson_time}).')
+                except Lesson.DoesNotExist:
+                    messages.error(request, f'Ошибка: Занятие {lesson_id} не найдено или не может быть отменено.')
+
+        return render(request, self.template_name, {
+            'student': student,
+            'lessons': lessons,
+            'now': timezone.now()
+        })
+
+# Главная страница инструктора с навигацией
 @method_decorator([login_required, user_passes_test(is_teacher)], name='dispatch')
 class TeacherDashboardView(View):
     template_name = 'autorization/teacher_dashboard.html'
 
     def get(self, request):
         teacher = Teacher.objects.get(user=request.user)
+        return render(request, self.template_name, {'teacher': teacher})
+
+
+# Управление профилем (свободное время)
+@method_decorator([login_required, user_passes_test(is_teacher)], name='dispatch')
+class TeacherProfileView(View):
+    template_name = 'autorization/teacher_profile.html'
+
+    def get(self, request):
+        teacher = Teacher.objects.get(user=request.user)
         form = TeacherProfileForm(instance=teacher)
+        return render(request, self.template_name, {'form': form, 'teacher': teacher})
+
+    def post(self, request):
+        teacher = Teacher.objects.get(user=request.user)
+        form = TeacherProfileForm(request.POST, instance=teacher)
+
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Профиль инструктора успешно обновлён!')
+            return redirect('autorization:teacher/profile')
+
+        return render(request, self.template_name, {'form': form, 'teacher': teacher})
+
+
+# Отметка посещенных уроков
+@method_decorator([login_required, user_passes_test(is_teacher)], name='dispatch')
+class TeacherLessonsView(View):
+    template_name = 'autorization/teacher_lessons.html'
+
+    def get(self, request):
+        teacher = Teacher.objects.get(user=request.user)
         lessons = Lesson.objects.filter(teacher=teacher).order_by('lesson_time')
         return render(request, self.template_name, {
-            'form': form,
             'teacher': teacher,
             'lessons': lessons,
             'now': timezone.now()
@@ -100,54 +180,44 @@ class TeacherDashboardView(View):
 
     def post(self, request):
         teacher = Teacher.objects.get(user=request.user)
-        form = TeacherProfileForm(request.POST, instance=teacher)
+        lessons = Lesson.objects.filter(teacher=teacher).order_by('lesson_time')
 
-        if 'save_profile' in request.POST and form.is_valid():
-            form.save()
-            messages.success(request, 'Профиль инструктора успешно обновлён!')
-            return redirect('autorization:teacher_dashboard')
-
-        # Обработка изменения статуса занятий
         for key, value in request.POST.items():
             if key.startswith('complete_') and value == '2':
                 lesson_id = key.replace('complete_', '')
                 lesson_type_key = f'lesson_type_{lesson_id}'
                 lesson_type = request.POST.get(lesson_type_key)
 
-                if not lesson_type or lesson_type not in ['autodrom', 'city']:
-                    messages.error(request, f'Ошибка: Не указан или неверный тип занятия для урока {lesson_id}.')
+                if lesson_type not in ['autodrom', 'city']:
+                    messages.error(request, f'Ошибка: Не указан тип занятия для урока {lesson_id}.')
                     continue
 
                 try:
-                    lesson = Lesson.objects.get(id=lesson_id, teacher=teacher,
-                                                status=1)  # Только подтверждённые занятия
-                    lesson.status = 2  # Отметка как проведённое
-                    lesson.lesson_type = lesson_type  # Установка типа занятия
+                    lesson = Lesson.objects.get(id=lesson_id, teacher=teacher, status=1)
+                    lesson.status = 2
+                    lesson.lesson_type = lesson_type
                     lesson.save()
 
-                    # Обновление часов ученика
                     student = lesson.student
                     time_slot = lesson.time_slot
-                    duration_hours = (time_slot.end_minutes - time_slot.start_minutes) / 60.0  # Длительность в часах
+                    duration_hours = (time_slot.end_minutes - time_slot.start_minutes) / 60.0
 
                     if duration_hours <= 0:
-                        messages.error(request, f'Ошибка: Неверная длительность занятия для {lesson.student}.')
+                        messages.error(request, f'Ошибка: Неверная длительность занятия для {lesson.student.name}.')
                         continue
 
                     if lesson_type == 'autodrom':
-                        student.autodrom_hours = (student.autodrom_hours or 0) + duration_hours
+                        student.autodrom_hours = max((student.autodrom_hours or 0) - duration_hours, 0)
                     elif lesson_type == 'city':
-                        student.city_hours = (student.city_hours or 0) + duration_hours
+                        student.city_hours = max((student.city_hours or 0) - duration_hours, 0)
                     student.save()
 
                     messages.success(request,
-                                     f'Занятие с {lesson.student} отмечено как проведённое ({lesson.get_lesson_type_display()}).')
+                                     f'Занятие с {lesson.student.name} отмечено как проведённое ({lesson.get_lesson_type_display()}).')
                 except Lesson.DoesNotExist:
                     messages.error(request, f'Ошибка: Занятие {lesson_id} не найдено или не может быть отмечено.')
 
-        lessons = Lesson.objects.filter(teacher=teacher).order_by('lesson_time')
         return render(request, self.template_name, {
-            'form': form,
             'teacher': teacher,
             'lessons': lessons,
             'now': timezone.now()
