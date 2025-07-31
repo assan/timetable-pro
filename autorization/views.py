@@ -111,14 +111,39 @@ class TeacherDashboardView(View):
         for key, value in request.POST.items():
             if key.startswith('complete_') and value == '2':
                 lesson_id = key.replace('complete_', '')
+                lesson_type_key = f'lesson_type_{lesson_id}'
+                lesson_type = request.POST.get(lesson_type_key)
+
+                if not lesson_type or lesson_type not in ['autodrom', 'city']:
+                    messages.error(request, f'Ошибка: Не указан или неверный тип занятия для урока {lesson_id}.')
+                    continue
+
                 try:
                     lesson = Lesson.objects.get(id=lesson_id, teacher=teacher,
                                                 status=1)  # Только подтверждённые занятия
                     lesson.status = 2  # Отметка как проведённое
+                    lesson.lesson_type = lesson_type  # Установка типа занятия
                     lesson.save()
-                    messages.success(request, f'Занятие с {lesson.student} отмечено как проведённое.')
+
+                    # Обновление часов ученика
+                    student = lesson.student
+                    time_slot = lesson.time_slot
+                    duration_hours = (time_slot.end_minutes - time_slot.start_minutes) / 60.0  # Длительность в часах
+
+                    if duration_hours <= 0:
+                        messages.error(request, f'Ошибка: Неверная длительность занятия для {lesson.student}.')
+                        continue
+
+                    if lesson_type == 'autodrom':
+                        student.autodrom_hours = (student.autodrom_hours or 0) + duration_hours
+                    elif lesson_type == 'city':
+                        student.city_hours = (student.city_hours or 0) + duration_hours
+                    student.save()
+
+                    messages.success(request,
+                                     f'Занятие с {lesson.student} отмечено как проведённое ({lesson.get_lesson_type_display()}).')
                 except Lesson.DoesNotExist:
-                    messages.error(request, 'Ошибка: Занятие не найдено или не может быть отмечено.')
+                    messages.error(request, f'Ошибка: Занятие {lesson_id} не найдено или не может быть отмечено.')
 
         lessons = Lesson.objects.filter(teacher=teacher).order_by('lesson_time')
         return render(request, self.template_name, {
@@ -127,7 +152,6 @@ class TeacherDashboardView(View):
             'lessons': lessons,
             'now': timezone.now()
         })
-
 @method_decorator([login_required, user_passes_test(is_admin)], name='dispatch')
 class AdminDashboardView(View):
     def get(self, request):

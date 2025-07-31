@@ -74,7 +74,9 @@
                 <th>Дата</th>
                 <th>День недели</th>
                 <th>Время</th>
+                <th>Тип занятия</th>
                 <th>Статус</th>
+                <th>Часы ученика</th>
                 <th>Действия</th>
             </tr>
         </thead>
@@ -86,16 +88,23 @@
                     <td>{{ lesson.lesson_time|date:"d.m.Y"|default:"Не указано" }}</td>
                     <td>{{ lesson.get_day_of_week_display }}</td>
                     <td>{{ lesson.time_slot.start_time }} - {{ lesson.time_slot.end_time }}</td>
+                    <td>{{ lesson.get_lesson_type_display|default:"Не указано" }}</td>
                     <td>{{ lesson.get_status_display }}</td>
+                    <td>Автодром: {{ lesson.student.autodrom_hours }} ч., Город: {{ lesson.student.city_hours }} ч.</td>
                     <td>
                         {% if lesson.status == 1 %}
+                            <select name="lesson_type_{{ lesson.id }}">
+                                <option value="" {% if not lesson.lesson_type %}selected{% endif %}>Выберите тип</option>
+                                <option value="autodrom" {% if lesson.lesson_type == 'autodrom' %}selected{% endif %}>Автодром</option>
+                                <option value="city" {% if lesson.lesson_type == 'city' %}selected{% endif %}>Город</option>
+                            </select>
                             <button type="submit" name="complete_{{ lesson.id }}" value="2" class="lesson-action" onclick="return confirmComplete(this)">Отметить проведённым</button>
                         {% endif %}
                     </td>
                 </tr>
             {% empty %}
                 <tr>
-                    <td colspan="7">Нет запланированных занятий</td>
+                    <td colspan="9">Нет запланированных занятий</td>
                 </tr>
             {% endfor %}
         </tbody>
@@ -103,7 +112,7 @@
     <button type="submit" name="save_lessons">Сохранить изменения</button>
 </form>
 
-
+<p><a href="{% url 'autorization:logout' %}">Выйти</a></p>
 
 <!-- JavaScript для подтверждения действия и сохранения позиции прокрутки -->
 <script>
@@ -118,11 +127,25 @@
             input.value = scrollPosition;
             input.dataset.lessonId = lessonId;
             form.appendChild(input);
+
+            // Проверка выбора типа занятия только для текущего занятия
+            const select = document.querySelector(`select[name="lesson_type_${lessonId}"]`);
+            if (!select.value) {
+                alert('Пожалуйста, выберите тип занятия для этого урока.');
+                e.preventDefault();
+                return false;
+            }
         });
     });
 
     function confirmComplete(button) {
         if (button.name.startsWith('complete_')) {
+            const lessonId = button.name.replace('complete_', '');
+            const select = document.querySelector(`select[name="lesson_type_${lessonId}"]`);
+            if (!select.value) {
+                alert('Пожалуйста, выберите тип занятия.');
+                return false;
+            }
             return confirm("Вы уверены, что хотите отметить занятие как проведённое?");
         }
         return true;

@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load custom_filters %}
 {% block title %}
 Отметить посещения
 {% endblock %}
@@ -8,7 +9,7 @@
         <h2>{{ lessons.0.get_day_of_week_display }}</h2>
         <form method="post" action="{% url 'scheduling:mark_attendance' %}">
             {% csrf_token %}
-            <div class="table-wrapper"> <!-- Добавляем table-wrapper для консистентности со стилями из enter_students.html -->
+            <div class="table-wrapper">
                 <table>
                     <thead>
                         <tr>
@@ -26,28 +27,29 @@
                                 <td data-label="Предмет">{{ lesson.subject.name }}</td>
                                 <td data-label="Учитель">{{ lesson.teacher.name }}</td>
                                 <td data-label="Время">{{ lesson.time_slot.start_time }} - {{ lesson.time_slot.end_time }}</td>
-                                <td class="attendance-radio" data-label="Тип занятия"> <!-- Класс attendance-radio для вертикального расположения -->
-                                    <label>
-                                        <input type="radio"
-                                               name="lesson_type_{{ lesson.id }}"
-                                               value="autodrom"
-                                               {% if lesson.lesson_type == 'autodrom' %}checked{% endif %}>
-                                        Автодром
-                                    </label>
-                                    <label>
-                                        <input type="radio"
-                                               name="lesson_type_{{ lesson.id }}"
-                                               value="city"
-                                               {% if lesson.lesson_type == 'city' %}checked{% endif %}>
-                                        Город
-                                    </label>
-                                    <label>
-                                        <input type="radio"
-                                               name="lesson_type_{{ lesson.id }}"
-                                               value=""
-                                               {% if lesson.lesson_type == '' %}checked{% endif %}>
-                                        Не выбрано
-                                    </label>
+                                <td class="attendance-radio" data-label="Тип занятия">
+                                    {% if lesson.status == 2 %}
+                                        Проведено ({{ lesson.get_lesson_type_display }})
+                                    {% elif lesson.status != 1 %}
+                                        Не подтверждено
+                                    {% else %}
+                                        <label>
+                                            <input type="radio"
+                                                   name="lesson_type_{{ lesson.id }}"
+                                                   value="autodrom"
+                                                   {% if lesson.lesson_type == 'autodrom' %}checked{% endif %}
+                                                   required>
+                                            Автодром
+                                        </label>
+                                        <label>
+                                            <input type="radio"
+                                                   name="lesson_type_{{ lesson.id }}"
+                                                   value="city"
+                                                   {% if lesson.lesson_type == 'city' %}checked{% endif %}
+                                                   required>
+                                            Город
+                                        </label>
+                                    {% endif %}
                                 </td>
                             </tr>
                         {% empty %}

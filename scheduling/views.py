@@ -298,21 +298,37 @@ def mark_attendance(request):
             for key, value in list(request.POST.items()):
                 if key.startswith('lesson_type_'):
                     lesson_id = key.split('_')[2]
-                    lesson = Lesson.objects.get(id=lesson_id)
-                    lesson.lesson_type = value
-                    lesson.is_attended = value in ['autodrom', 'city']
-                    if lesson.is_attended:
+                    try:
+                        lesson = Lesson.objects.get(id=lesson_id, status=1)  # Только подтверждённые занятия
+                        if value not in ['autodrom', 'city']:
+                            messages.error(request, f'Ошибка: Неверный тип занятия для урока {lesson_id}.')
+                            continue
+
+                        lesson.lesson_type = value
+                        lesson.status = 2  # Отметка как проведённое
+                        lesson.save()
+
+                        # Уменьшение часов ученика
                         student = lesson.student
-                        if value == 'autodrom' and student.autodrom_hours > 0:
-                            student.autodrom_hours -= 1
-                        elif value == 'city' and student.city_hours > 0:
-                            student.city_hours -= 1
+                        time_slot = lesson.time_slot
+                        duration_hours = (time_slot.end_minutes - time_slot.start_minutes) / 60.0  # Длительность в часах
+
+                        if duration_hours <= 0:
+                            messages.error(request, f'Ошибка: Неверная длительность занятия для {lesson.student}.')
+                            continue
+
+                        if value == 'autodrom':
+                            student.autodrom_hours = max((student.autodrom_hours or 0) - duration_hours, 0)
+                        elif value == 'city':
+                            student.city_hours = max((student.city_hours or 0) - duration_hours, 0)
                         student.save()
-                        lesson.lesson_type = ''
-                        lesson.is_attended = False
-                    lesson.save()
+
+                        messages.success(request,
+                                         f'Занятие с {lesson.student} отмечено как проведённое ({lesson.get_lesson_type_display()}).')
+                    except Lesson.DoesNotExist:
+                        messages.error(request, f'Ошибка: Занятие {lesson_id} не найдено или не может быть отмечено.')
             messages.success(request, 'Посещения засчитаны')
-        return redirect('scheduling:attendance')
+        return redirect('scheduling:mark_attendance')
 
     schedule = {}
     for day in range(7):
