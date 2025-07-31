@@ -104,10 +104,12 @@ class Lesson(models.Model):
     time_slot = models.ForeignKey(TimeSlot, on_delete=models.CASCADE)
     lesson_type = models.CharField(max_length=10, choices=LESSON_TYPES, default='', blank=True)
     status = models.IntegerField(choices=STATUS_CHOICES, default=0)
-    lesson_time = models.DateTimeField(null=True, blank=True)  # Новое поле для точного времени
+    lesson_time = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.student} - {self.subject} - {self.teacher} - {self.lesson_time} - {self.get_status_display()}"
 
     def get_status_display(self):
-        return dict(self.STATUS_CHOICES).get(self.status, 'unknown')
+        return dict(self.STATUS_CHOICES).get(self.status, 'неизвестно')
+    def get_day_of_week_display(self):
+        return dict(self.DAYS_OF_WEEK).get(self.day_of_week, 'неизвестно')

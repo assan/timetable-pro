@@ -1,11 +1,5 @@
 from django.urls import path
-from .views import (
-    StudentListCreateView, StudentUpdateView, StudentDeleteView,
-    SubjectListCreateView, SubjectUpdateView, SubjectDeleteView,
-    TeacherListCreateView, TeacherUpdateView, TeacherDeleteView,
-    TimeSlotListCreateView, TimeSlotUpdateView, TimeSlotDeleteView,
-    CalculateScheduleView, ScheduleView, get_teachers, mark_attendance, confirm_lessons
-)
+from .views import *
 
 app_name = 'scheduling'
 

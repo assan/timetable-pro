@@ -16,6 +16,40 @@ from django.utils import timezone
 
 # Декораторы для защиты представлений
 decorators = [login_required, user_passes_test(is_admin)]
+# Расчет расписания
+@method_decorator(decorators, name='dispatch')
+class CalculateScheduleView(View):
+    template_name = 'scheduling/calculate_schedule.html'
+
+    def get(self, request, *args, **kwargs):
+        return render(request, self.template_name)
+
+    def post(self, request, *args, **kwargs):
+        status = calculate_schedule()
+        if status:
+            messages.success(request, 'Расписание успешно рассчитано!')
+            return redirect('scheduling:schedule')
+        messages.error(request, 'Не удалось рассчитать расписание.')
+        return render(request, 'scheduling/error.html', {'message': 'Unable to calculate schedule.'})
+
+# Просмотр расписания
+@method_decorator(decorators, name='dispatch')
+class ScheduleView(ListView):
+    model = Lesson
+    template_name = 'scheduling/schedule.html'
+    context_object_name = 'schedule'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        lessons = Lesson.objects.select_related('student', 'teacher', 'subject', 'time_slot').all()
+        schedule = {i: [] for i in range(7)}
+        for lesson in lessons:
+            schedule[lesson.day_of_week].append(lesson)
+        for day in schedule:
+            schedule[day].sort(key=lambda x: x.time_slot.start_time)
+        context['schedule'] = schedule
+        context['timezone'] = timezone  # Убедитесь, что timezone доступен
+        return context
 
 # Студенты: создание и список
 @method_decorator(decorators, name='dispatch')
@@ -246,40 +280,7 @@ class TimeSlotDeleteView(DeleteView):
         except TimeSlot.DoesNotExist:
             return HttpResponseNotFound("<h2>Временной отрезок не найден</h2>")
 
-# Расчет расписания
-@method_decorator(decorators, name='dispatch')
-class CalculateScheduleView(View):
-    template_name = 'scheduling/calculate_schedule.html'
 
-    def get(self, request, *args, **kwargs):
-        return render(request, self.template_name)
-
-    def post(self, request, *args, **kwargs):
-        status = calculate_schedule()
-        if status:
-            messages.success(request, 'Расписание успешно рассчитано!')
-            return redirect('scheduling:schedule')
-        messages.error(request, 'Не удалось рассчитать расписание.')
-        return render(request, 'scheduling/error.html', {'message': 'Unable to calculate schedule.'})
-
-# Просмотр расписания
-@method_decorator(decorators, name='dispatch')
-class ScheduleView(ListView):
-    model = Lesson
-    template_name = 'scheduling/schedule.html'
-    context_object_name = 'schedule'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        lessons = Lesson.objects.select_related('student', 'teacher', 'subject', 'time_slot').all()
-        schedule = {i: [] for i in range(7)}
-        for lesson in lessons:
-            schedule[lesson.day_of_week].append(lesson)
-        for day in schedule:
-            schedule[day].sort(key=lambda x: x.time_slot.start_time)
-        context['schedule'] = schedule
-        context['timezone'] = timezone  # Убедитесь, что timezone доступен
-        return context
 # Получение списка учителей для предмета
 @login_required
 @user_passes_test(is_admin)

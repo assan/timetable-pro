@@ -64,7 +64,7 @@ class StudentDashboardView(View):
             'form': form,
             'student': student,
             'lessons': lessons,
-            'now': timezone.now()
+            'now': timezone.now()  # Гарантируем передачу now
         })
 
     def post(self, request):
@@ -75,29 +75,58 @@ class StudentDashboardView(View):
             messages.success(request, 'Профиль курсанта успешно обновлён!')
             return redirect('autorization:student_dashboard')
         lessons = Lesson.objects.filter(student=student).order_by('lesson_time')
-        return (render(request, self.template_name, {
+        return render(request, self.template_name, {
             'form': form,
             'student': student,
             'lessons': lessons,
-            'now': timezone.now()
+            'now': timezone.now()  # Передаём now и при POST
         })
-@method_decorator([login_required, user_passes_test(is_teacher)], name='dispatch'))
+
+
+@method_decorator([login_required, user_passes_test(is_teacher)], name='dispatch')
 class TeacherDashboardView(View):
     template_name = 'autorization/teacher_dashboard.html'
 
     def get(self, request):
         teacher = Teacher.objects.get(user=request.user)
         form = TeacherProfileForm(instance=teacher)
-        return render(request, self.template_name, {'form': form, 'teacher': teacher})
+        lessons = Lesson.objects.filter(teacher=teacher).order_by('lesson_time')
+        return render(request, self.template_name, {
+            'form': form,
+            'teacher': teacher,
+            'lessons': lessons,
+            'now': timezone.now()
+        })
 
     def post(self, request):
         teacher = Teacher.objects.get(user=request.user)
         form = TeacherProfileForm(request.POST, instance=teacher)
-        if form.is_valid():
+
+        if 'save_profile' in request.POST and form.is_valid():
             form.save()
             messages.success(request, 'Профиль инструктора успешно обновлён!')
             return redirect('autorization:teacher_dashboard')
-        return render(request, self.template_name, {'form': form, 'teacher': teacher})
+
+        # Обработка изменения статуса занятий
+        for key, value in request.POST.items():
+            if key.startswith('complete_') and value == '2':
+                lesson_id = key.replace('complete_', '')
+                try:
+                    lesson = Lesson.objects.get(id=lesson_id, teacher=teacher,
+                                                status=1)  # Только подтверждённые занятия
+                    lesson.status = 2  # Отметка как проведённое
+                    lesson.save()
+                    messages.success(request, f'Занятие с {lesson.student} отмечено как проведённое.')
+                except Lesson.DoesNotExist:
+                    messages.error(request, 'Ошибка: Занятие не найдено или не может быть отмечено.')
+
+        lessons = Lesson.objects.filter(teacher=teacher).order_by('lesson_time')
+        return render(request, self.template_name, {
+            'form': form,
+            'teacher': teacher,
+            'lessons': lessons,
+            'now': timezone.now()
+        })
 
 @method_decorator([login_required, user_passes_test(is_admin)], name='dispatch')
 class AdminDashboardView(View):
@@ -122,48 +151,3 @@ def get_teachers_by_subject(request, subject_id):
     teachers = Teacher.objects.filter(subject_id=subject_id).values('id', 'name')
     return JsonResponse({'teachers': list(teachers)})
 
-@login_required
-def confirm_lessons(request):
-    if request.method == 'POST':
-        student = request.user.student if hasattr(request.user, 'student') else None
-        if not student:
-            messages.error(request, 'Вы не являетесь курсантом.')
-            return redirect('autorization:student_dashboard')  # Или другая страница по умолчанию
-
-        for key, value in request.POST.items():
-            if key.startswith('confirm_'):
-                lesson_id = key.replace('confirm_', '')
-                try:
-                    lesson = Lesson.objects.get(id=lesson_id, student=student)
-                    if lesson.status == 0 and int(value) == 1:  # Только из scheduled в confirmed
-                        lesson.status = 1
-                        lesson.save()
-                        print(f"Confirmed lesson {lesson_id}")
-                        messages.success(request, f'Занятие {lesson_id} подтверждено.')
-                except Lesson.DoesNotExist:
-                    messages.error(request, f'Занятие {lesson_id} не найдено.')
-            elif key.startswith('cancel_'):
-                lesson_id = key.replace('cancel_', '')
-                try:
-                    lesson = Lesson.objects.get(id=lesson_id, student=student)
-                    if lesson.status == 0 and timezone.now() < lesson.lesson_time - timezone.timedelta(hours=24):
-                        lesson.status = 3
-                        lesson.save()
-                        messages.success(request, f'Занятие {lesson_id} отменено.')
-                    else:
-                        messages.error(request, f'Отмена занятия {lesson_id} невозможна (менее 24 часов или не запланировано).')
-                except Lesson.DoesNotExist:
-                    messages.error(request, f'Занятие {lesson_id} не найдено.')
-            elif key == 'save':  # Обработка кнопки "Сохранить изменения"
-                pass  # Можно добавить дополнительную логику, если нужно
-
-        # Получаем обновлённые данные для рендеринга
-        form = StudentProfileForm(instance=student)
-        lessons = Lesson.objects.filter(student=student).order_by('lesson_time')
-        return render(request, 'autorization/student_dashboard.html', {
-            'form': form,
-            'student': student,
-            'lessons': lessons,
-            'now': timezone.now()
-        })
-    return redirect('autorization:student_dashboard')  # Для GET-запросов перенаправляем на страницу
