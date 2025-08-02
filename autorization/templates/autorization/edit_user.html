@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
-{% block title %}Панель администратора{% endblock %}
+{% block title %}Редактировать пользователя{% endblock %}
 {% block content %}
-<h2>Создать пользователя</h2>
+<h2>Редактировать пользователя</h2>
 
 {% if messages %}
     <ul class="messages">
@@ -11,17 +11,21 @@
     </ul>
 {% endif %}
 
-<form method="post" id="user-create-form">
+<form method="post">
     {% csrf_token %}
     {% if form.errors %}
         <ul class="errorlist">
             {% for field in form %}
-                {% for error in field.errors %}
-                    <li>{{ field.label }}: {{ error }}</li>
-                {% endfor %}
+                {% if field.errors %}
+                    {% for error in field.errors %}
+                        <li>{{ field.label }}: {{ error }}</li>
+                    {% endfor %}
+                {% endif %}
             {% endfor %}
             {% for error in form.non_field_errors %}
                 <li>{{ error }}</li>
+            {% empty %}
+                <li>Нет общих ошибок формы</li>
             {% endfor %}
         </ul>
     {% endif %}
@@ -46,43 +50,12 @@
         {{ form.username }}
     </div>
     <div>
-        <label for="{{ form.password.id_for_label }}">Пароль:</label>
+        <label for="{{ form.password.id_for_label }}">Пароль (оставьте пустым, чтобы не менять):</label>
         {{ form.password }}
     </div>
-    <button type="submit">Создать</button>
+    <button type="submit">Сохранить</button>
+    <a href="{% url 'autorization:admin_dashboard' %}" class="btn btn-cancel">Отмена</a>
 </form>
-
-<h2>Список пользователей</h2>
-<table>
-    <tr>
-        <th>Имя пользователя</th>
-        <th>Роль</th>
-        <th>Имя</th>
-        <th>Тип трансмиссии</th>
-        <th>Инструктор</th>
-        <th>Действия</th>
-    </tr>
-    {% for user in users %}
-    <tr>
-        <td>{{ user.user.username|default:"—" }}</td>
-        <td>{{ user.get_role_display }}</td>
-        <td>{{ user.name|default:"—" }}</td>
-        <td>{{ user.subject|default:"—" }}</td>
-        <td>{{ user.teacher.name|default:"—" }}</td>
-        <td>
-            <a href="{% url 'autorization:edit_user' user.id %}" class="btn btn-edit">Редактировать</a>
-            <form method="post" action="{% url 'autorization:delete_user' user.id %}" style="display:inline;" onsubmit="return confirm('Вы уверены, что хотите удалить пользователя {{ user.user.username|default:'без имени' }}?');">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-delete">Удалить</button>
-            </form>
-        </td>
-    </tr>
-    {% empty %}
-        <tr>
-            <td colspan="6">Нет пользователей</td>
-        </tr>
-    {% endfor %}
-</table>
 
 <style>
 .btn {
@@ -93,17 +66,11 @@
     border-radius: 3px;
     cursor: pointer;
 }
-.btn-edit {
-    background-color: #4CAF50;
+.btn-cancel {
+    background-color: #6c757d;
 }
-.btn-edit:hover {
-    background-color: #45a049;
-}
-.btn-delete {
-    background-color: #f44336;
-}
-.btn-delete:hover {
-    background-color: #da190b;
+.btn-cancel:hover {
+    background-color: #5a6268;
 }
 </style>
 
@@ -158,6 +125,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                 const option = document.createElement('option');
                                 option.value = teacher.id;
                                 option.text = teacher.name;
+                                if (teacher.id == '{{ form.teacher.value|default_if_none:"" }}') {
+                                    option.selected = true;
+                                }
                                 teacherSelect.appendChild(option);
                             });
                         }
@@ -175,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Инициализация полей
+    // Инициализация полей при загрузке
     if (roleField) {
         updateFields();
         roleField.addEventListener('change', function() {

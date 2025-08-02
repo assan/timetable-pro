@@ -21,82 +21,34 @@ class LoginForm(forms.Form):
 
 
 class UserProfileForm(forms.ModelForm):
-    username = forms.CharField(max_length=150, required=True, label='Имя пользователя')
-    password = forms.CharField(widget=forms.PasswordInput, required=True, label='Пароль')
-    name = forms.CharField(max_length=255, required=True, label='Имя')
-    subject = forms.ModelChoiceField(
-        queryset=Subject.objects.all(),
-        required=False,
-        label='Тип трансмиссии'
-    )
-    teacher = forms.ModelChoiceField(
-        queryset=Teacher.objects.all(),
-        required=False,
-        label='Инструктор'
-    )
+    username = forms.CharField(max_length=150, required=True)
+    password = forms.CharField(widget=forms.PasswordInput, required=False)
 
     class Meta:
         model = UserProfile
-        fields = ['role']
+        fields = ['role', 'name', 'subject', 'teacher']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['role'].widget.attrs.update({'id': 'id_role'})
-        self.fields['subject'].widget.attrs.update({'id': 'id_subject'})
-        self.fields['teacher'].widget.attrs.update({'id': 'id_teacher'})
-
-    def clean_username(self):
-        username = self.cleaned_data['username']
-        if User.objects.filter(username=username).exists():
-            raise forms.ValidationError("Пользователь с таким именем уже существует.")
-        return username
-
-    def clean(self):
-        cleaned_data = super().clean()
-        role = cleaned_data.get('role')
-        subject = cleaned_data.get('subject')
-        teacher = cleaned_data.get('teacher')
-
-        if role == 'student':
-            if not subject:
-                self.add_error('subject', 'Выберите тип трансмиссии для курсанта.')
-            if not teacher:
-                self.add_error('teacher', 'Выберите инструктора для курсанта.')
-            elif teacher and subject and teacher.subject != subject:
-                self.add_error('teacher', 'Инструктор должен соответствовать выбранному типу трансмиссии.')
-        elif role == 'teacher':
-            if not subject:
-                self.add_error('subject', 'Выберите тип трансмиссии для инструктора.')
-        return cleaned_data
+        # Проверяем, существует ли instance и связанный user
+        if self.instance and hasattr(self.instance, 'user') and self.instance.user:
+            self.fields['username'].initial = self.instance.user.username
+        # Ограничиваем выбор инструкторов только пользователями с ролью teacher
+        self.fields['teacher'].queryset = UserProfile.objects.filter(role='teacher')
 
     def save(self, commit=True):
-        user = User.objects.create_user(
-            username=self.cleaned_data['username'],
-            password=self.cleaned_data['password']
-        )
         user_profile = super().save(commit=False)
+        # Если instance уже имеет user, используем его, иначе создаём новый
+        user = self.instance.user if (self.instance and hasattr(self.instance, 'user') and self.instance.user) else User.objects.create_user(
+            username=self.cleaned_data['username'],
+            password=self.cleaned_data['password'] or None
+        )
+        if self.cleaned_data['password']:
+            user.set_password(self.cleaned_data['password'])
+            user.save()
         user_profile.user = user
         if commit:
             user_profile.save()
-            if user_profile.role == 'student' and not Student.objects.filter(user=user).exists():
-                subject = self.cleaned_data.get('subject') or Subject.objects.first()
-                teacher = self.cleaned_data.get('teacher')
-                print(f"Saving student with teacher: {teacher}")  # Отладка
-                Student.objects.create(
-                    user=user,
-                    name=self.cleaned_data.get('name') or user.username,
-                    subject=subject,
-                    autodrom_hours=10,
-                    city_hours=5,
-                    teacher=teacher
-                )
-            elif user_profile.role == 'teacher' and not Teacher.objects.filter(user=user).exists():
-                subject = self.cleaned_data.get('subject') or Subject.objects.first()
-                Teacher.objects.create(
-                    user=user,
-                    name=self.cleaned_data.get('name') or user.username,
-                    subject=subject
-                )
         return user_profile
 
 class StudentProfileForm(forms.ModelForm):

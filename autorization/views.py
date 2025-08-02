@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.utils.decorators import method_decorator
 from django.views.generic import TemplateView, ListView
 from django.views.generic.edit import FormMixin
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
 from .forms import *
 from .models import UserProfile
@@ -226,7 +226,8 @@ class TeacherLessonsView(View):
 class AdminDashboardView(View):
     def get(self, request):
         form = UserProfileForm()
-        users = UserProfile.objects.all()
+        # Фильтруем только профили с существующим user
+        users = UserProfile.objects.filter(user__isnull=False)
         return render(request, 'autorization/admin_dashboard.html', {'form': form, 'users': users})
 
     def post(self, request):
@@ -235,11 +236,37 @@ class AdminDashboardView(View):
         if form.is_valid():
             print(form.cleaned_data)
             form.save()
-            role_display = dict(UserProfile.ROLES).get(form.cleaned_data['role'], 'Пользователь')
+            role_display = dict(UserProfile.ROLES).get(form.cleaned_data['role'], 'Курсант')
             messages.success(request, f"{role_display} успешно создан!")
             return redirect('autorization:admin_dashboard')
-        users = UserProfile.objects.all()
+        users = UserProfile.objects.filter(user__isnull=False)
         return render(request, 'autorization/admin_dashboard.html', {'form': form, 'users': users})
+
+@method_decorator([login_required, user_passes_test(is_admin)], name='dispatch')
+class EditUserView(View):
+    def get(self, request, user_id):
+        user_profile = get_object_or_404(UserProfile, id=user_id)
+        form = UserProfileForm(instance=user_profile)
+        return render(request, 'autorization/edit_user.html', {'form': form, 'user_id': user_id})
+
+    def post(self, request, user_id):
+        user_profile = get_object_or_404(UserProfile, id=user_id)
+        form = UserProfileForm(request.POST, instance=user_profile)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Пользователь {user_profile.user.username} успешно обновлён!")
+            return redirect('autorization:admin_dashboard')
+        return render(request, 'autorization/edit_user.html', {'form': form, 'user_id': user_id})
+
+@method_decorator([login_required, user_passes_test(is_admin)], name='dispatch')
+class DeleteUserView(View):
+    def post(self, request, user_id):
+        user_profile = get_object_or_404(UserProfile, id=user_id)
+        username = user_profile.user.username
+        user_profile.user.delete()  # Удаляем связанного пользователя
+        user_profile.delete()  # Удаляем профиль
+        messages.success(request, f"Пользователь {username} успешно удалён!")
+        return redirect('autorization:admin_dashboard')
 
 def get_teachers_by_subject(request, subject_id):
     teachers = Teacher.objects.filter(subject_id=subject_id).values('id', 'name')

@@ -160,7 +160,32 @@ td a:hover {
     border: 1px solid #f5c6cb;
     padding: 8px;
 }
-
+.btn {
+    padding: 5px 10px;
+    margin-right: 5px;
+    text-decoration: none;
+    color: white;
+    border-radius: 3px;
+    cursor: pointer;
+}
+.btn-edit {
+    background-color: #4CAF50;
+}
+.btn-edit:hover {
+    background-color: #45a049;
+}
+.btn-delete {
+    background-color: #f44336;
+}
+.btn-delete:hover {
+    background-color: #da190b;
+}
+.btn-cancel {
+    background-color: #6c757d;
+}
+.btn-cancel:hover {
+    background-color: #5a6268;
+}
 /* Адаптивность для мобильных устройств */
 @media (max-width: 768px) {
     table, thead, tbody, th, td, tr {
