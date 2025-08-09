@@ -16,7 +16,7 @@ def time_to_int(time):
 def is_overlapping(time_slot1, time_slot2):
     st1, et1 = time_slot1.start_minutes, time_slot1.end_minutes
     st2, et2 = time_slot2.start_minutes, time_slot2.end_minutes
-    return max(st1,st2)<min(et1,et2)
+    return max(st1,st2)<=min(et1,et2)
 
 def init_time_slots():
     TimeSlot.objects.all().delete()

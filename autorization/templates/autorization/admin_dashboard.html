@@ -84,29 +84,6 @@
     {% endfor %}
 </table>
 
-<style>
-.btn {
-    padding: 5px 10px;
-    margin-right: 5px;
-    text-decoration: none;
-    color: white;
-    border-radius: 3px;
-    cursor: pointer;
-}
-.btn-edit {
-    background-color: #4CAF50;
-}
-.btn-edit:hover {
-    background-color: #45a049;
-}
-.btn-delete {
-    background-color: #f44336;
-}
-.btn-delete:hover {
-    background-color: #da190b;
-}
-</style>
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const roleField = document.getElementById('{{ form.role.id_for_label }}');
@@ -135,10 +112,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (role === 'admin') {
             subjectField.style.display = 'none';
             teacherField.style.display = 'none';
+            teacherSelect.innerHTML = '<option value="">---------</option>';
         } else if (role === 'student') {
             subjectField.style.display = 'block';
             teacherField.style.display = 'block';
-            // Загружаем инструкторов для текущего предмета
             const subjectId = subjectSelect.value;
             if (subjectId) {
                 fetch("{% url 'autorization:get_teachers_by_subject' 999 %}".replace('999', subjectId))
@@ -156,8 +133,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         } else {
                             data.teachers.forEach(teacher => {
                                 const option = document.createElement('option');
-                                option.value = teacher.id;
-                                option.text = teacher.name;
+                                option.value = teacher.id; // ID объекта UserProfile
+                                option.text = teacher.name; // Имя из UserProfile
                                 teacherSelect.appendChild(option);
                             });
                         }
@@ -167,11 +144,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         teacherSelect.innerHTML = '<option value="">Ошибка загрузки</option>';
                     });
             } else {
-                teacherSelect.innerHTML = '<option value="">---------</option>';
+                teacherSelect.innerHTML = '<option value="">Выберите тип трансмиссии</option>';
             }
         } else if (role === 'teacher') {
             subjectField.style.display = 'block';
             teacherField.style.display = 'none';
+            teacherSelect.innerHTML = '<option value="">---------</option>';
         }
     }
 
@@ -179,7 +157,15 @@ document.addEventListener('DOMContentLoaded', function() {
     if (roleField) {
         updateFields();
         roleField.addEventListener('change', function() {
-            console.log('Change event triggered');
+            console.log('Role change event triggered');
+            updateFields();
+        });
+    }
+
+    // Обработчик изменения типа трансмиссии
+    if (subjectSelect) {
+        subjectSelect.addEventListener('change', function() {
+            console.log('Subject changed to:', subjectSelect.value);
             updateFields();
         });
     }

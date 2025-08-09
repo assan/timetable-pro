@@ -53,7 +53,11 @@ class TimeSlot(models.Model):
     end_minutes = models.IntegerField(default=0)  # время окончания в минутах
 
     def __str__(self):
-        return f"{self.start_time} - {self.end_time}"
+        start_minutes = str(self.start_minutes % 60).zfill(2)
+        start_hours = str(self.start_minutes // 60).zfill(2)
+        end_minutes = str(self.end_minutes % 60).zfill(2)
+        end_hours = str(self.end_minutes // 60).zfill(2)
+        return start_hours+':'+start_minutes+' - '+end_hours+':'+end_minutes
 # Модель для хранения доступности конкретного временного слота для конкретной пары курсант-инструктор
 class Availability(models.Model):
     DAYS_OF_WEEK = (

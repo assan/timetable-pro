@@ -30,15 +30,30 @@ class UserProfileForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Проверяем, существует ли instance и связанный user
         if self.instance and hasattr(self.instance, 'user') and self.instance.user:
             self.fields['username'].initial = self.instance.user.username
-        # Ограничиваем выбор инструкторов только пользователями с ролью teacher
         self.fields['teacher'].queryset = UserProfile.objects.filter(role='teacher')
+        if not self.initial.get('subject'):
+            self.initial['subject'] = Subject.objects.first()  # Устанавливаем первый subject по умолчанию
+
+    def clean(self):
+        cleaned_data = super().clean()
+        role = cleaned_data.get('role')
+        subject = cleaned_data.get('subject')
+        teacher = cleaned_data.get('teacher')
+
+        if role == 'student':
+            if not subject:
+                raise forms.ValidationError('Для курсанта необходимо выбрать тип трансмиссии.')
+            if not teacher:
+                raise forms.ValidationError('Для курсанта необходимо выбрать инструктора.')
+        elif role == 'teacher':
+            if not subject:
+                raise forms.ValidationError('Для инструктора необходимо выбрать тип трансмиссии.')
+        return cleaned_data
 
     def save(self, commit=True):
         user_profile = super().save(commit=False)
-        # Если instance уже имеет user, используем его, иначе создаём новый
         user = self.instance.user if (self.instance and hasattr(self.instance, 'user') and self.instance.user) else User.objects.create_user(
             username=self.cleaned_data['username'],
             password=self.cleaned_data['password'] or None

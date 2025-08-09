@@ -27,7 +27,7 @@
                                 <td data-label="Предмет">{{ lesson.subject.name }}</td>
                                 <td data-label="Учитель">{{ lesson.teacher.name }}</td>
                                 <td data-label="Дата">{{ lesson.lesson_time|date:"d.m.Y" }}</td>
-                                <td data-label="Время">{{ lesson.time_slot.start_time }} - {{ lesson.time_slot.end_time }}</td>
+                                <td data-label="Время">{{ lesson.time_slot}}</td>
                                 <td data-label="Статус">{{ lesson.get_status_display }}</td>
                                 <td data-label="Действия">
                                     {% if lesson.status == 0 %}

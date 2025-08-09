@@ -17,7 +17,7 @@ def is_admin(user):
     return user.is_authenticated and hasattr(user, 'userprofile') and user.userprofile.role == 'admin'
 
 def is_student(user):
-    return user.is_authenticated and hasattr(user, 'userprofile') and user.userprofile.role == 'student'
+    return user.is_authenticated and hasattr(user, 'userprofile') and user.userprofile.role == 'student' and Student.objects.filter(user=user).exists()
 
 def is_teacher(user):
     return user.is_authenticated and hasattr(user, 'userprofile') and user.userprofile.role == 'teacher'
@@ -59,8 +59,12 @@ class StudentDashboardView(View):
     template_name = 'autorization/student_dashboard.html'
 
     def get(self, request):
-        student = Student.objects.get(user=request.user)
-        return render(request, self.template_name, {'student': student})
+        try:
+            student = Student.objects.get(user=request.user)
+            return render(request, self.template_name, {'student': student})
+        except Student.DoesNotExist:
+            messages.error(request, 'Профиль курсанта не найден. Обратитесь к администратору.')
+            return redirect('autorization:login')
 
 
 # Управление профилем (свободное время)
@@ -226,19 +230,49 @@ class TeacherLessonsView(View):
 class AdminDashboardView(View):
     def get(self, request):
         form = UserProfileForm()
-        # Фильтруем только профили с существующим user
         users = UserProfile.objects.filter(user__isnull=False)
         return render(request, 'autorization/admin_dashboard.html', {'form': form, 'users': users})
 
     def post(self, request):
-        print(request.POST)
         form = UserProfileForm(request.POST)
         if form.is_valid():
-            print(form.cleaned_data)
-            form.save()
-            role_display = dict(UserProfile.ROLES).get(form.cleaned_data['role'], 'Курсант')
+            # Сохраняем UserProfile через форму
+            user_profile = form.save(commit=False)
+            role = form.cleaned_data['role']
+            name = form.cleaned_data['name']
+            subject = form.cleaned_data.get('subject')
+            teacher_profile = form.cleaned_data.get('teacher')  # UserProfile с ролью teacher
+
+            # Сохраняем UserProfile
+            user_profile.save()
+
+            # Создаём объект Student или Teacher
+            if role == 'student':
+                if teacher_profile:
+                    try:
+                        teacher = Teacher.objects.get(user=teacher_profile.user)
+                    except Teacher.DoesNotExist:
+                        messages.error(request, 'Ошибка: Выбранный инструктор не имеет профиля Teacher.')
+                        return render(request, 'autorization/admin_dashboard.html', {'form': form, 'users': UserProfile.objects.filter(user__isnull=False)})
+                else:
+                    teacher = None
+                Student.objects.create(
+                    user=user_profile.user,
+                    name=name,
+                    subject=subject,
+                    teacher=teacher
+                )
+            elif role == 'teacher':
+                Teacher.objects.create(
+                    user=user_profile.user,
+                    name=name,
+                    subject=subject
+                )
+
+            role_display = dict(UserProfile.ROLES).get(role, 'Курсант')
             messages.success(request, f"{role_display} успешно создан!")
             return redirect('autorization:admin_dashboard')
+
         users = UserProfile.objects.filter(user__isnull=False)
         return render(request, 'autorization/admin_dashboard.html', {'form': form, 'users': users})
 
@@ -269,6 +303,9 @@ class DeleteUserView(View):
         return redirect('autorization:admin_dashboard')
 
 def get_teachers_by_subject(request, subject_id):
-    teachers = Teacher.objects.filter(subject_id=subject_id).values('id', 'name')
+    teachers = UserProfile.objects.filter(
+        role='teacher',
+        user__teacher__subject_id=subject_id
+    ).values('id', 'name')
     return JsonResponse({'teachers': list(teachers)})
 
