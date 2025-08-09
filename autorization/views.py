@@ -228,10 +228,21 @@ class TeacherLessonsView(View):
 
 @method_decorator([login_required, user_passes_test(is_admin)], name='dispatch')
 class AdminDashboardView(View):
+
+    def get_users_queryset(self):
+        """Возвращает список пользователей без admin."""
+        return UserProfile.objects.filter(user__isnull=False).exclude(user__username='admin')
+
     def get(self, request):
         form = UserProfileForm()
-        users = UserProfile.objects.filter(user__isnull=False)
-        return render(request, 'autorization/admin_dashboard.html', {'form': form, 'users': users})
+        return render(
+            request,
+            'autorization/admin_dashboard.html',
+            {
+                'form': form,
+                'users': self.get_users_queryset()
+            }
+        )
 
     def post(self, request):
         form = UserProfileForm(request.POST)
@@ -249,8 +260,14 @@ class AdminDashboardView(View):
                     teacher = Teacher.objects.get(user=teacher_profile.user)
                 except Teacher.DoesNotExist:
                     messages.error(request, 'Ошибка: Выбранный инструктор не имеет профиля Teacher.')
-                    return render(request, 'autorization/admin_dashboard.html',
-                                  {'form': form, 'users': UserProfile.objects.filter(user__isnull=False)})
+                    return render(
+                        request,
+                        'autorization/admin_dashboard.html',
+                        {
+                            'form': form,
+                            'users': self.get_users_queryset()
+                        }
+                    )
 
                 Student.objects.create(
                     user=user_profile.user,
@@ -267,11 +284,17 @@ class AdminDashboardView(View):
 
             role_display = dict(UserProfile.ROLES).get(role, 'Курсант')
             messages.success(request, f"{role_display} успешно создан!")
-            return redirect('autorization:admin_dashboard')  # Редирект после успеха
+            return redirect('autorization:admin_dashboard')
 
-        # Если форма невалидна, рендерим с ошибками
-        users = UserProfile.objects.filter(user__isnull=False)
-        return render(request, 'autorization/admin_dashboard.html', {'form': form, 'users': users})
+        # Если форма невалидна
+        return render(
+            request,
+            'autorization/admin_dashboard.html',
+            {
+                'form': form,
+                'users': self.get_users_queryset()
+            }
+        )
 
 @method_decorator([login_required, user_passes_test(is_admin)], name='dispatch')
 class EditUserView(View):
