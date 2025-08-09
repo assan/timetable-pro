@@ -32,7 +32,7 @@ class Student(models.Model):
     name = models.CharField(max_length=50)
     subject = models.ForeignKey('Subject', on_delete=models.SET_NULL,null=True, blank = True)
     teacher = models.ForeignKey('Teacher', on_delete=models.SET_NULL, null=True, blank=True)  # Изменено
-    times_per_week = models.IntegerField(default=3)
+    times_per_week = models.IntegerField(default=2)
     city_hours = models.IntegerField(default=2)
     autodrom_hours = models.IntegerField(default=8)
     monday_free_time = models.CharField(max_length=100, default="", null=True, blank=True)

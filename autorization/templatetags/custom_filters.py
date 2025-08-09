@@ -16,3 +16,16 @@ def is_more_than_24_hours(lesson_time, now):
     time_threshold = lesson_time - timezone.timedelta(hours=24)
     print(f"Checking: lesson_time={lesson_time}, now={now}, threshold={time_threshold}")
     return now < time_threshold
+
+@register.filter
+def day_name(day_number):
+    days = {
+        0: 'Понедельник',
+        1: 'Вторник',
+        2: 'Среда',
+        3: 'Четверг',
+        4: 'Пятница',
+        5: 'Суббота',
+        6: 'Воскресенье',
+    }
+    return days.get(day_number, 'неизвестно')

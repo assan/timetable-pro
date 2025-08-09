@@ -4,14 +4,6 @@
 {% block content %}
 <h2>Расписание и уроки курсанта: {{ student.name }}</h2>
 
-{% if messages %}
-    <ul class="messages">
-        {% for message in messages %}
-            <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
-        {% endfor %}
-    </ul>
-{% endif %}
-
 <form method="post" action="{% url 'autorization:student_schedule' %}" id="dashboard-form">
     {% csrf_token %}
     <table>

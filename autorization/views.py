@@ -163,9 +163,7 @@ class TeacherProfileView(View):
         if form.is_valid():
             form.save()
             messages.success(request, 'Профиль инструктора успешно обновлён!')
-            return redirect('autorization:teacher/profile')
-
-        return render(request, self.template_name, {'form': form, 'teacher': teacher})
+            return redirect('autorization:teacher_profile')  # Используем правильное имя маршрута
 
 
 # Отметка посещенных уроков
@@ -226,6 +224,8 @@ class TeacherLessonsView(View):
             'lessons': lessons,
             'now': timezone.now()
         })
+
+
 @method_decorator([login_required, user_passes_test(is_admin)], name='dispatch')
 class AdminDashboardView(View):
     def get(self, request):
@@ -236,26 +236,22 @@ class AdminDashboardView(View):
     def post(self, request):
         form = UserProfileForm(request.POST)
         if form.is_valid():
-            # Сохраняем UserProfile через форму
             user_profile = form.save(commit=False)
             role = form.cleaned_data['role']
             name = form.cleaned_data['name']
             subject = form.cleaned_data.get('subject')
-            teacher_profile = form.cleaned_data.get('teacher')  # UserProfile с ролью teacher
+            teacher_profile = form.cleaned_data.get('teacher')
 
-            # Сохраняем UserProfile
             user_profile.save()
 
-            # Создаём объект Student или Teacher
             if role == 'student':
-                if teacher_profile:
-                    try:
-                        teacher = Teacher.objects.get(user=teacher_profile.user)
-                    except Teacher.DoesNotExist:
-                        messages.error(request, 'Ошибка: Выбранный инструктор не имеет профиля Teacher.')
-                        return render(request, 'autorization/admin_dashboard.html', {'form': form, 'users': UserProfile.objects.filter(user__isnull=False)})
-                else:
-                    teacher = None
+                try:
+                    teacher = Teacher.objects.get(user=teacher_profile.user)
+                except Teacher.DoesNotExist:
+                    messages.error(request, 'Ошибка: Выбранный инструктор не имеет профиля Teacher.')
+                    return render(request, 'autorization/admin_dashboard.html',
+                                  {'form': form, 'users': UserProfile.objects.filter(user__isnull=False)})
+
                 Student.objects.create(
                     user=user_profile.user,
                     name=name,
@@ -271,8 +267,9 @@ class AdminDashboardView(View):
 
             role_display = dict(UserProfile.ROLES).get(role, 'Курсант')
             messages.success(request, f"{role_display} успешно создан!")
-            return redirect('autorization:admin_dashboard')
+            return redirect('autorization:admin_dashboard')  # Редирект после успеха
 
+        # Если форма невалидна, рендерим с ошибками
         users = UserProfile.objects.filter(user__isnull=False)
         return render(request, 'autorization/admin_dashboard.html', {'form': form, 'users': users})
 

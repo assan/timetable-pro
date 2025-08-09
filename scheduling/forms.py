@@ -15,7 +15,7 @@ class StudentForm(forms.ModelForm):
                   'teacher':'Инструктор',
                   'city_hours':'Часы вождения в городе',
                   'autodrom_hours':'Часы вождения на автодроме',
-                  'times_per_week':'Желаемое количество занятий в неделю',
+                  'times_per_week':'Максимальное количество занятий в неделю',
                   'monday_free_time':"Свободное время в понедельник",
                   'tuesday_free_time':"Свободное время во вторник",
                   'wednesday_free_time':"Свободное время в среду",

@@ -13,15 +13,15 @@
 <h2>Рассчитываются автоматически</h2>
 <table>
     <tr>
-        <th>Время начала</th>
-        <th>Время конца</th>
+        <th>Время</th>
+
         <th></th>
         <th></th>
     </tr>
 {% for time_slot in time_slots %}
     <tr>
-    <td>{{time_slot.start_time}}  </td>
-        <td>{{time_slot.end_time}}  </td>
+    <td>{{time_slot}}  </td>
+
         <td><a href="edit/{{time_slot.id}}">Изменить</a> </td>
         <td><a href="delete/{{time_slot.id}}">Удалить</a></td>
     </tr>

@@ -4,7 +4,7 @@
 {% block content %}
     <h1>Расписание вождения</h1>
     {% for day, lessons in schedule.items %}
-        <h2>{{ lessons.0.get_day_of_week_display }}</h2>
+        <h2>{{ day|day_name }}</h2>
         <form method="post" action="{% url 'scheduling:confirm_lessons' %}" id="lesson-form-{{ day }}">
             {% csrf_token %}
             <div class="table-wrapper">

@@ -24,8 +24,8 @@ def init_time_slots():
     for h in range(8, 20):
         for m in range(0, 46, 15):
             start_time = f"{h:02d}:{m:00}"
-            end_h = (h * 60 + m + 45) // 60
-            end_m = (h * 60 + m + 45) % 60
+            end_h = (h * 60 + m + 90) // 60
+            end_m = (h * 60 + m + 90) % 60
             end_time = f"{end_h:02d}:{end_m:00}"
             time_slots.append(
                 TimeSlot(

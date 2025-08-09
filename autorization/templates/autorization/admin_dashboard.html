@@ -3,13 +3,6 @@
 {% block content %}
 <h2>Создать пользователя</h2>
 
-{% if messages %}
-    <ul class="messages">
-        {% for message in messages %}
-            <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
-        {% endfor %}
-    </ul>
-{% endif %}
 
 <form method="post" id="user-create-form">
     {% csrf_token %}
@@ -85,6 +78,7 @@
 </table>
 
 <script>
+
 document.addEventListener('DOMContentLoaded', function() {
     const roleField = document.getElementById('{{ form.role.id_for_label }}');
     const nameField = document.getElementById('name-field');
@@ -93,19 +87,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const subjectSelect = document.getElementById('{{ form.subject.id_for_label }}');
     const teacherSelect = document.getElementById('{{ form.teacher.id_for_label }}');
 
-    // Проверка наличия элементов
-    if (!roleField) console.error('roleField not found');
-    if (!nameField) console.error('nameField not found');
-    if (!subjectField) console.error('subjectField not found');
-    if (!teacherField) console.error('teacherField not found');
-    if (!subjectSelect) console.error('subjectSelect not found');
-    if (!teacherSelect) console.error('teacherSelect not found');
+    if (!roleField || !nameField || !subjectField || !teacherField || !subjectSelect || !teacherSelect) {
+        console.error('One or more form fields not found');
+        return;
+    }
 
     function updateFields() {
-        if (!roleField) {
-            console.error('Cannot update fields: roleField is null');
-            return;
-        }
         const role = roleField.value;
         console.log('Role changed to:', role);
         nameField.style.display = 'block';
@@ -119,28 +106,23 @@ document.addEventListener('DOMContentLoaded', function() {
             const subjectId = subjectSelect.value;
             if (subjectId) {
                 fetch("{% url 'autorization:get_teachers_by_subject' 999 %}".replace('999', subjectId))
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok: ' + response.statusText);
-                        }
-                        return response.json();
-                    })
+                    .then(response => response.json())
                     .then(data => {
-                        console.log('Received data:', data);
+                        console.log('Received teachers:', data.teachers);
                         teacherSelect.innerHTML = '<option value="">---------</option>';
                         if (data.teachers.length === 0) {
                             teacherSelect.innerHTML += '<option value="">Нет инструкторов</option>';
                         } else {
                             data.teachers.forEach(teacher => {
                                 const option = document.createElement('option');
-                                option.value = teacher.id; // ID объекта UserProfile
-                                option.text = teacher.name; // Имя из UserProfile
+                                option.value = teacher.id;
+                                option.text = teacher.name;
                                 teacherSelect.appendChild(option);
                             });
                         }
                     })
                     .catch(error => {
-                        console.error('Ошибка:', error);
+                        console.error('Error fetching teachers:', error);
                         teacherSelect.innerHTML = '<option value="">Ошибка загрузки</option>';
                     });
             } else {
@@ -153,22 +135,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Инициализация полей
-    if (roleField) {
-        updateFields();
-        roleField.addEventListener('change', function() {
-            console.log('Role change event triggered');
-            updateFields();
-        });
-    }
-
-    // Обработчик изменения типа трансмиссии
-    if (subjectSelect) {
-        subjectSelect.addEventListener('change', function() {
-            console.log('Subject changed to:', subjectSelect.value);
-            updateFields();
-        });
-    }
+    updateFields();
+    roleField.addEventListener('change', updateFields);
+    subjectSelect.addEventListener('change', updateFields);
 });
 </script>
 {% endblock %}
