@@ -52,7 +52,6 @@ def init_availability():
     for day in range(7):
         day_of_week = days_of_week[day]
         for student in students:
-            logging.debug(student)
             if getattr(student, day_of_week):  # Проверяем, что у студента есть свободное время
                 teacher = student.teacher
                 if teacher is None:  # Пропускаем студентов без инструктора
@@ -67,7 +66,6 @@ def init_availability():
                 for time_slot in time_slots:
                     if sfts <= time_slot.start_minutes and efts >= time_slot.end_minutes \
                             and sftt <= time_slot.start_minutes and eftt >= time_slot.end_minutes:
-                        print(student, time_slot)
                         availabilities.append(
                             Availability(
                                 student=student,
