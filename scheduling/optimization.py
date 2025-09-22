@@ -2,6 +2,7 @@ from scheduling.models import *
 from datetime import time, datetime, timedelta
 from pulp import *
 from django.utils import timezone
+import logging
 
 def parse_start_end(time):
     time = time.split('-')
@@ -16,7 +17,7 @@ def time_to_int(time):
 def is_overlapping(time_slot1, time_slot2):
     st1, et1 = time_slot1.start_minutes, time_slot1.end_minutes
     st2, et2 = time_slot2.start_minutes, time_slot2.end_minutes
-    return max(st1,st2)<=min(et1,et2)
+    return max(st1,st2)<min(et1,et2)
 
 def init_time_slots():
     TimeSlot.objects.all().delete()
@@ -47,9 +48,11 @@ def init_availability():
         6: 'sunday_free_time'
     }
     availabilities = []
+    logging.info("Working")
     for day in range(7):
         day_of_week = days_of_week[day]
         for student in students:
+            logging.debug(student)
             if getattr(student, day_of_week):  # Проверяем, что у студента есть свободное время
                 teacher = student.teacher
                 if teacher is None:  # Пропускаем студентов без инструктора
@@ -64,6 +67,7 @@ def init_availability():
                 for time_slot in time_slots:
                     if sfts <= time_slot.start_minutes and efts >= time_slot.end_minutes \
                             and sftt <= time_slot.start_minutes and eftt >= time_slot.end_minutes:
+                        print(student, time_slot)
                         availabilities.append(
                             Availability(
                                 student=student,
