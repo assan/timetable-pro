@@ -311,16 +311,16 @@ def mark_attendance(request):
                         # Уменьшение часов ученика
                         student = lesson.student
                         time_slot = lesson.time_slot
-                        duration_hours = (time_slot.end_minutes - time_slot.start_minutes) / 60.0  # Длительность в часах
+                        # duration_hours = (time_slot.end_minutes - time_slot.start_minutes) / 60.0  # Длительность в часах
 
-                        if duration_hours <= 0:
-                            messages.error(request, f'Ошибка: Неверная длительность занятия для {lesson.student}.')
-                            continue
+                        # if duration_hours <= 0:
+                        #     messages.error(request, f'Ошибка: Неверная длительность занятия для {lesson.student}.')
+                        #     continue
 
                         if value == 'autodrom':
-                            student.autodrom_hours = max((student.autodrom_hours or 0) - duration_hours, 0)
+                            student.autodrom_hours = max(student.autodrom_hours-1, 0)
                         elif value == 'city':
-                            student.city_hours = max((student.city_hours or 0) - duration_hours, 0)
+                            student.city_hours = max(student.city_hours-1, 0)
                         student.save()
 
                         messages.success(request,

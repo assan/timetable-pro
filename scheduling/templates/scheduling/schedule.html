@@ -59,8 +59,8 @@
             <div class="hours-info">
                 {% for lesson in lessons %}
                     <p>{{ lesson.student.name }}:
-                       Автодром - {{ lesson.student.autodrom_hours }} ч.,
-                       Город - {{ lesson.student.city_hours }} ч.</p>
+                       Автодром - {{ lesson.student.autodrom_hours }} занятий,
+                       Город - {{ lesson.student.city_hours }} занятий</p>
                 {% endfor %}
             </div>
         {% endif %}

@@ -202,16 +202,16 @@ class TeacherLessonsView(View):
 
                     student = lesson.student
                     time_slot = lesson.time_slot
-                    duration_hours = (time_slot.end_minutes - time_slot.start_minutes) / 60.0
+                    # duration_hours = (time_slot.end_minutes - time_slot.start_minutes) / 60.0
 
-                    if duration_hours <= 0:
-                        messages.error(request, f'Ошибка: Неверная длительность занятия для {lesson.student.name}.')
-                        continue
+                    # if duration_hours <= 0:
+                    #     messages.error(request, f'Ошибка: Неверная длительность занятия для {lesson.student.name}.')
+                    #     continue
 
                     if lesson_type == 'autodrom':
-                        student.autodrom_hours = max((student.autodrom_hours or 0) - duration_hours, 0)
+                        student.autodrom_hours = max(student.autodrom_hours - 1, 0)
                     elif lesson_type == 'city':
-                        student.city_hours = max((student.city_hours or 0) - duration_hours, 0)
+                        student.city_hours = max(student.city_hours - 1, 0)
                     student.save()
 
                     messages.success(request,
