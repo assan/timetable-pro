@@ -1,0 +1,30 @@
+site_name: Автоматическое расписание автошколы "Кусаинов"
+site_url: https://assan.github.io/timetable-pro
+site_author: Vanguard
+site_description: Оптимальное расписание для автошколы
+
+theme:
+  name: material
+  language: ru
+  logo: images/logo.jpg       # логотип в шапке
+  favicon: images/favicon.ico # иконка сайта
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: red
+    - scheme: slate
+      primary: red
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Переключить на тёмную тему
+  features:
+    - navigation.tabs
+    - navigation.expand
+    - search.highlight
+    - content.code.copy
+
+extra:
+  social:
+    - icon: fontawesome/brands/instagram
+      link: https://www.instagram.com/driving_school_in_almaty/
