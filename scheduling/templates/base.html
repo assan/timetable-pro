@@ -13,12 +13,14 @@
     <nav>
         {% if user.is_authenticated %}
             {% if user.userprofile.role == 'student' %}
+                <a href="{% url 'booking:free_slots' %}">Записаться на занятие</a>
                 <a href="{% url 'autorization:student_dashboard' %}">Личный кабинет</a>
                 <a href="{% url 'autorization:logout' %}">Выйти</a>
             {% elif user.userprofile.role == 'teacher' %}
                 <a href="{% url 'autorization:teacher_dashboard' %}">Личный кабинет</a>
                 <a href="{% url 'autorization:logout' %}">Выйти</a>
             {% elif user.userprofile.role == 'admin' %}
+                 <a href="{% url 'booking:free_slots' %}">Свободные окна</a>
                 <a href="{% url 'scheduling:schedule' %}">На главную</a>
                 <a href="{% url 'scheduling:calculate_schedule' %}">Рассчитать расписание</a>
                 <a href="{% url 'scheduling:mark_attendance' %}">Отметить посещения</a>

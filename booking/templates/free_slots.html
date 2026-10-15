@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+
+{% block title %}Свободные окна{% endblock %}
+
+{% block content %}
+<h1>Свободные окна для записи</h1>
+
+{% if is_admin %}
+<form method="get" style="margin-bottom: 20px;">
+    <label>Инструктор:</label>
+    <select name="teacher" onchange="this.form.submit()">
+        <option value="">— выберите —</option>
+        {% for t in teachers %}
+            <option value="{{ t.id }}" {% if selected_teacher and selected_teacher.id == t.id %}selected{% endif %}>
+                {{ t.name }} ({{ t.subject.name }})
+            </option>
+        {% endfor %}
+    </select>
+</form>
+{% endif %}
+
+{% if selected_teacher %}
+    <h2>Инструктор: {{ selected_teacher.name }}</h2>
+    {% if selected_student %}
+        <p>Курсант: {{ selected_student.name }}</p>
+    {% endif %}
+
+    {% if free_slots %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Дата</th>
+                    <th>День</th>
+                    <th>Время</th>
+                    <th>Действие</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for slot in free_slots %}
+                <tr>
+                    <td>{{ slot.date|date:"d.m.Y" }}</td>
+                    <td>{{ slot.day_of_week|day_name }}</td>
+                    <td>{{ slot.time_slot }}</td>
+                    <td>
+                        <form method="post" action="{% url 'booking:book_slot' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="teacher_id" value="{{ slot.teacher.id }}">
+                            <input type="hidden" name="time_slot_id" value="{{ slot.time_slot.id }}">
+                            <input type="hidden" name="date" value="{{ slot.date|date:'Y-m-d' }}">
+                            {% if is_admin and not selected_student %}
+                                <select name="student_id" required>
+                                    <option value="">Курсант</option>
+                                    {% for s in selected_teacher.student_set.all %}
+                                        <option value="{{ s.id }}">{{ s.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            {% elif selected_student %}
+                                <input type="hidden" name="student_id" value="{{ selected_student.id }}">
+                            {% endif %}
+                            <button type="submit">Забронировать</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>Свободных окон не найдено.</p>
+    {% endif %}
+{% else %}
+    <p>Выберите инструктора.</p>
+{% endif %}
+{% endblock %}

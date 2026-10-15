@@ -6,5 +6,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('scheduling/', include('scheduling.urls')),
     path('autorization/', include('autorization.urls')),
+    path('booking/', include('booking.urls')),
     path('', ScheduleView.as_view(), name='home'),
 ]
