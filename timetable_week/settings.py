@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'scheduling',
     'autorization.apps.AutorizationConfig',  # Или просто 'autorization', если apps.py настроен
+    'booking'
 ]
 
 MIDDLEWARE = [
