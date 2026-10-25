@@ -4,16 +4,8 @@ from django.utils import timezone
 from scheduling.models import Teacher, Student, TimeSlot, Lesson
 from scheduling.optimization import parse_start_end, is_overlapping
 from .models import Booking
-from django.urls import path
-from . import views
 
-app_name = 'booking'
 
-urlpatterns = [
-    path('free-slots/', views.free_slots_view, name='free_slots'),
-    path('book/', views.book_slot, name='book_slot'),
-
-]
 DAYS_FIELDS = {
     0: 'monday_free_time',
     1: 'tuesday_free_time',
