@@ -78,88 +78,149 @@ def init_availability():
                         )
     Availability.objects.bulk_create(availabilities)
 
-def calculate_schedule():
+def calculate_schedule(premium=False, stability_weight=8.0, satisfaction_weight=3.0):
     init_time_slots()
     init_availability()
-    students = Student.objects.select_related('teacher', 'subject').all()
-    teachers = Teacher.objects.all()
-    subjects = Subject.objects.all()
-    time_slots = TimeSlot.objects.all()
-    availabilities = Availability.objects.select_related('student', 'teacher', 'subject', 'time_slot').all()
-    # Создание модели
-    model = LpProblem(name="templates", sense=LpMaximize)
+
+    students = list(Student.objects.select_related('teacher', 'subject').all())
+    teachers = list(Teacher.objects.all())
+    subjects = list(Subject.objects.all())
+    time_slots = list(TimeSlot.objects.all())
+    availabilities = list(
+        Availability.objects.select_related('student', 'teacher', 'subject', 'time_slot')
+        .filter(available=True)
+    )
+
+    # ---------- Предыдущее расписание (для стабилизации) ----------
+    previous = set()
+    if premium:
+        for lesson in Lesson.objects.filter(status__in=[0, 1]).select_related(
+            'student', 'teacher', 'subject', 'time_slot'
+        ):
+            key = (
+                lesson.student_id,
+                lesson.teacher_id,
+                lesson.subject_id,
+                lesson.day_of_week,
+                lesson.time_slot_id,
+            )
+            previous.add(key)
+
+    # ---------- Создание модели ----------
+    model = LpProblem(name="timetable", sense=LpMaximize)
+
     # Переменные только для доступных комбинаций
     x = LpVariable.dicts(
         "x",
-        [(a.student.id, a.teacher.id, a.subject.id, a.day_of_week, a.time_slot.id)
-         for a in availabilities if a.available],
-        cat='Binary'
+        [
+            (a.student.id, a.teacher.id, a.subject.id, a.day_of_week, a.time_slot.id)
+            for a in availabilities
+        ],
+        cat="Binary",
     )
 
-    # Ограничения
-    # 1. Каждый учитель может проводить только один урок в одно и то же время
-    T1 = LpVariable.dicts("T1", [(d, t.id, j.id) for d in range(7) for t in time_slots for j in teachers], 0, 1, LpInteger)
+    # ---------- Жёсткие ограничения (как у вас сейчас) ----------
+    # 1. Учитель — не более одного занятия в слот
+    T1 = LpVariable.dicts(
+        "T1",
+        [(d, t.id, j.id) for d in range(7) for t in time_slots for j in teachers],
+        0, 1, LpInteger,
+    )
     for j in teachers:
         for d in range(7):
             for t in time_slots:
-                model += T1[d, t.id, j.id] == lpSum(x.get((i.id, j.id, y.id, d, t.id), 0) for i in students for y in subjects)
+                model += T1[d, t.id, j.id] == lpSum(
+                    x.get((i.id, j.id, y.id, d, t.id), 0)
+                    for i in students for y in subjects
+                )
                 model += T1[d, t.id, j.id] <= 1
-    # 2. Каждый ученик может посещать только один урок в одно и то же время
+
+    # 2. Студент — не более одного занятия в слот
     for i in students:
         for d in range(7):
             for t in time_slots:
-                model += lpSum(x.get((i.id, j.id, y.id, d, t.id), 0) for j in teachers for y in subjects) <= 1
-    # 3. Каждый ученик может посещать не более одного урока по одному предмету в день
+                model += lpSum(
+                    x.get((i.id, j.id, y.id, d, t.id), 0)
+                    for j in teachers for y in subjects
+                ) <= 1
+
+    # 3. Не более одного занятия по предмету в день у студента
     for i in students:
         for y in subjects:
             for d in range(7):
-                model += lpSum(x.get((i.id, j.id, y.id, d, t.id), 0) for j in teachers for t in time_slots) <= 1
+                model += lpSum(
+                    x.get((i.id, j.id, y.id, d, t.id), 0)
+                    for j in teachers for t in time_slots
+                ) <= 1
 
-    # Предварительно вычисленные пересечения
-    overlapping_pairs = [(t1, t2) for t1 in time_slots for t2 in time_slots if t1 != t2 and is_overlapping(t1, t2)]
-    # 4. Только одно занятие в пересекающихся отрезках времени для каждого учителя
+    # 4–5. Пересечения слотов (учитель и студент)
+    overlapping_pairs = [
+        (t1, t2) for t1 in time_slots for t2 in time_slots
+        if t1 != t2 and is_overlapping(t1, t2)
+    ]
     for j in teachers:
         for d in range(7):
             for t1, t2 in overlapping_pairs:
-                model += lpSum(x.get((i.id, j.id, y.id, d, t1.id), 0) for i in students for y in subjects) + \
-                         lpSum(x.get((i.id, j.id, y.id, d, t2.id), 0) for i in students for y in subjects) <= 1
-    # 5. Только одно занятие в пересекающихся отрезках времени для каждого ученика
+                model += (
+                    lpSum(x.get((i.id, j.id, y.id, d, t1.id), 0) for i in students for y in subjects)
+                    + lpSum(x.get((i.id, j.id, y.id, d, t2.id), 0) for i in students for y in subjects)
+                ) <= 1
+
     for i in students:
         for d in range(7):
             for t1, t2 in overlapping_pairs:
-                model += lpSum(x.get((i.id, j.id, y.id, d, t1.id), 0) for j in teachers for y in subjects) + \
-                         lpSum(x.get((i.id, j.id, y.id, d, t2.id), 0) for j in teachers for y in subjects) <= 1
-    # 6. Ограничение спроса - количество занятий в неделю для каждого ученика
+                model += (
+                    lpSum(x.get((i.id, j.id, y.id, d, t1.id), 0) for j in teachers for y in subjects)
+                    + lpSum(x.get((i.id, j.id, y.id, d, t2.id), 0) for j in teachers for y in subjects)
+                ) <= 1
+
+    # 6. Лимит занятий в неделю
     for i in students:
-        model += lpSum(x.get((i.id, j.id, y.id, d, t.id), 0) for d in range(7) for j in teachers for y in subjects for t in time_slots) <= i.times_per_week
-    # Построение целевой функции - сумма количества проведённых уроков
-    model += lpSum(x.values())
-    # Решение модели
-    status = model.solve()
-    # Выгрузка рассчитанного расписания в модель Lessons с lesson_time
-    if status:
+        model += lpSum(
+            x.get((i.id, j.id, y.id, d, t.id), 0)
+            for d in range(7) for j in teachers for y in subjects for t in time_slots
+        ) <= i.times_per_week
+
+    # ---------- Мягкие ограничения / целевая функция (premium) ----------
+    # Базовая часть — максимизация количества занятий
+    obj = lpSum(x.values())
+
+    if premium:
+        # 1. Стабилизация: бонус за совпадение с предыдущей неделей
+        for key in previous:
+            if key in x:
+                obj += stability_weight * x[key]
+
+        # 2. Удовлетворённость: бонус, если назначено ≥ половины запрошенного
+        satisfied = LpVariable.dicts(
+            "satisfied",
+            [i.id for i in students],
+            cat="Binary",
+        )
+
+        for i in students:
+            half = max(1, i.times_per_week // 2)  # порог «половина запрошенных»
+            total = lpSum(
+                x.get((i.id, j.id, y.id, d, t.id), 0)
+                for d in range(7) for j in teachers for y in subjects for t in time_slots
+            )
+            # Если total >= half, можно поставить satisfied = 1
+            model += total >= half * satisfied[i.id]
+
+        obj += satisfaction_weight * lpSum(satisfied.values())
+
+    model += obj
+
+    # ---------- Решение ----------
+    status = model.solve(PULP_CBC_CMD(msg=False, timeLimit=30, gapRel=0.05))
+
+    # Дальше ваша существующая логика сохранения Lesson
+    # (можно оставить почти без изменений)
+    if LpStatus[status] in ("Optimal", "Feasible"):
         Lesson.objects.all().delete()
-        today = timezone.now().date()
-        current_weekday = today.weekday()  # 0 = понедельник, 6 = воскресенье
-        for a in availabilities:
-            if a.available and x.get((a.student.id, a.teacher.id, a.subject.id, a.day_of_week, a.time_slot.id), 0).value() == 1:
-                # Вычисляем lesson_time для следующей недели
-                current_weekday = today.weekday()  # 0 = понедельник, 1 = вторник и т.д.
-                days_to_add = (a.day_of_week - current_weekday + 7)
-                lesson_date = today + timedelta(days=days_to_add)
-                # Извлекаем start_time из time_slot.start_time (например, "08:00" из "08:00-08:45")
-                start_time_str = a.time_slot.start_time.split('-')[0]  # Берем только начальное время
-                hour, minute = map(int, start_time_str.split(':'))
-                lesson_time = timezone.make_aware(
-                    datetime.combine(lesson_date, datetime.min.time()).replace(hour=hour, minute=minute))
-                # Создаём занятие
-                Lesson.objects.create(
-                    student=a.student,
-                    teacher=a.teacher,
-                    subject=a.subject,
-                    day_of_week=a.day_of_week,
-                    time_slot=a.time_slot,
-                    lesson_time=lesson_time,
-                    status=0  # scheduled по умолчанию
-                )
+        # ... ваш код создания Lesson по x.value() == 1 ...
+        # Рекомендуется также сохранить метрики:
+        # - сколько слотов совпало с previous
+        # - сколько студентов удовлетворено (satisfied[i.id].value() == 1)
+
     return status

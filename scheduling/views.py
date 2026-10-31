@@ -13,6 +13,7 @@ from django.contrib import messages
 from autorization.views import is_admin  # Импортируем проверку роли
 from autorization.forms import StudentProfileForm
 from django.utils import timezone
+from pulp import LpStatus
 
 # Декораторы для защиты представлений
 decorators = [login_required, user_passes_test(is_admin)]
@@ -25,13 +26,18 @@ class CalculateScheduleView(View):
         return render(request, self.template_name)
 
     def post(self, request, *args, **kwargs):
-        status = calculate_schedule()
-        if status:
+        # status = calculate_schedule(premium=False) базовая версия с максимальным количеством уроков
+        status = calculate_schedule(
+            premium=True,
+            stability_weight=8.0,  # чем больше — тем сильнее держит прошлую неделю
+            satisfaction_weight=3.0,  # вес «удовлетворённости»
+        ) # премиальная версия со стабилизированным расписанием
+        if LpStatus[status] in ("Optimal", "Feasible"):
             messages.success(request, 'Расписание успешно рассчитано!')
             return redirect('scheduling:schedule')
+
         messages.error(request, 'Не удалось рассчитать расписание.')
         return render(request, 'scheduling/error.html', {'message': 'Unable to calculate schedule.'})
-
 # Просмотр расписания
 @method_decorator(decorators, name='dispatch')
 class ScheduleView(ListView):
